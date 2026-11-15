@@ -1,0 +1,5 @@
+label,tripped,rpm,Tair_C,pBaro_Pa,rho_kgm3,mu_Pas,U_prime_ms,U_corr_ms,Re_prime,Re_corr,CD_prime,CD_refined,CL_prime,CL_symmetry,dCp_30deg,CD_corr_eq2,CD_corr_integral,V_over_Vprime,theta_sep_deg,theta_Cpmin_deg,Cp_min,Re_equiv,u_Cp_peak,u_CD,u_thetaSep_deg,u_Cp_peak_meas,u_CD_meas,u_thetaSep_meas
+DEMO - Smooth - low speed,0,700,20.55,101437,1.2032,1.8160e-05,15.500,17.078,1.0475e+05,1.1541e+05,1.1087,1.1101,0.0129,0.0000,-0.00425,0.8361,0.9137,1.1018,89.8,75.0,-2.274,NaN,0.110,0.044,2.5,NaN,NaN,NaN
+DEMO - Smooth - high speed,0,1350,20.55,101294,1.2015,1.8160e-05,30.500,33.294,2.0583e+05,2.2468e+05,0.9250,0.9263,0.0123,-0.0000,-0.00469,0.7164,0.7767,1.0916,97.5,80.0,-2.093,NaN,0.027,0.010,2.5,NaN,NaN,NaN
+DEMO - Trip - low speed,1,700,21.52,101139,1.1957,1.8206e-05,15.500,16.524,1.0383e+05,1.1069e+05,0.4647,0.4597,0.0161,0.0000,-0.01276,0.3836,0.4091,1.0661,130.5,95.0,-1.603,1.021e+06,0.087,0.022,19.9,NaN,NaN,NaN
+DEMO - Trip - high speed,1,1350,21.47,101057,1.1949,1.8204e-05,30.500,32.739,2.0422e+05,2.1921e+05,0.5969,0.5935,0.0155,-0.0000,0.00243,0.4840,0.5184,1.0734,131.0,95.0,-1.501,1.824e+06,0.021,0.007,4.0,NaN,NaN,NaN
