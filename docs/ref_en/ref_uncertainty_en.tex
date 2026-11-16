@@ -1,0 +1,516 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titleformat{\section}{\Large\bfseries\color{black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{black}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{black}}{\thesubsubsection}{0.6em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\linespread{1.25}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Cylinder Flow: Uncertainty and Error Propagation}\\[4pt]
+{\large Companion notes to \texttt{cylinder\_lab.m}, \texttt{cpUncertainty.m}, \texttt{runUncertainty.m}}\\[8pt]
+{\small Engineering Practice 2 -- Aerodynamics 2 \quad\textbar\quad RODH 115 (ex L50)
+\quad\textbar\quad $d = 102$\,mm, $b = 460$\,mm, $d/b = 0.2217$}
+\end{center}
+
+\vspace{4pt}
+
+\section{Purpose and conventions}
+
+\subsection{Division of labour between the three files}
+
+The calculation is split into three files so that each formula has exactly one home: change an
+assumption once and nothing goes stale. \texttt{cpUncertainty.m} owns everything whose independent
+variable is \Cp{} --- $u(\Cp)$ per tapping, $u(\CD')$, and the angular part of $u(\theta_{\text{sep}})$.
+\texttt{runUncertainty.m} owns everything else: the dynamic-head-to-velocity-to-Reynolds chain, plus
+the tapping-angle errors. \texttt{cylinder\_lab.m} only calls, prints and plots; it derives nothing.
+
+Both modules are optional. The main script checks \texttt{exist} before calling, and falls back to
+NaN with a printed note. The point is that forgetting to copy one file should not stop a lab session.
+
+\subsection{Symbols, coverage factor, presentation}
+
+Every $u$ here is a $1\sigma$ standard uncertainty, not a 95\,\% interval. When a 95\,\% figure is
+needed, $k = 2$ is used (\texttt{cfg.sepUncK}) --- an engineering convention, since this experiment
+does not carry enough degrees of freedom to fix the coverage factor properly.
+
+Error bars on all figures are $1\sigma$, stated in the titles. In the results CSV, columns starting
+\texttt{u\_} are $1\sigma$ and columns starting \texttt{U95} are $k=2$. Keeping both lets you explain
+in the viva the difference between the bar you drew and the number you quoted.
+
+\section{Measurement chain and inputs}
+
+\subsection{From column height to \Cp}
+
+Each tapping gives a height $h_i$, static gives $h_s$, total gives $h_t$:
+
+\begin{equation}
+\Cp{}_i = \frac{h_i - h_s}{h_t - h_s} = \frac{A}{B}
+\end{equation}
+
+Ethanol density, gravity, the scale zero and whether the tubes connect at the top or bottom of the
+board all cancel in the ratio. That is also why the connection direction does not change \Cp:
+reversed connection flips every column, so numerator and denominator flip together. The one thing
+that genuinely needs a physical decision at the rig is which Pitot tube is total. The criterion is
+that hole 2 ($\theta = 0$, stagnation) has surface pressure equal to total pressure, so the tube
+reading equal to $h(\text{hole } 2)$ is the total one. If both are far from stagnation the script
+takes the larger and prints a note.
+
+\subsection{From column height to $U$ and \ReD}
+
+\begin{equation}
+q = \rho_e g\,|\Delta h|, \qquad U = \sqrt{\frac{2q}{\rho}}, \qquad \ReD = \frac{\rho U d}{\mu}
+\end{equation}
+
+\begin{equation}
+\rho = \frac{p}{RT}, \qquad \mu = \mu_0\left(\frac{T}{T_0}\right)^{1.5}\frac{T_0 + S}{T + S}
+\end{equation}
+
+Here $\Delta h = h_t - h_s$, the same $B$ as above. Note that $\rho$ appears both in $\rho U d$ and
+inside $U = \sqrt{2q/\rho}$; that duplication fixes a coefficient of $+0.5$ in Section~\ref{sec:re}
+and is the easiest sign to get wrong.
+
+\subsection{Inputs and assumptions}
+
+\begin{table}[H]
+\centering
+\caption{Every input to the uncertainty model}
+\small
+\begin{tabularx}{\textwidth}{@{}l p{3.4cm} p{2.5cm} c X@{}}
+\toprule
+Symbol & Meaning & Value & Type & Source / note \\
+\midrule
+$u$ & uncertainty of one column reading & 0.5 mm & A+B merged, conservative &
+\texttt{cfg.uRead}; fallback when no repeats \\
+$u_{\text{scale}}$ & type B from the scale graduation & 1.0 mm $\to$ 0.289 mm & B &
+\texttt{cfg.uScale}, rectangular $(1/2)/\sqrt{3}$ \\
+$u_\theta$ & standard uncertainty of one tapping angle & 0.29$^\circ$ & B &
+\texttt{cfg.uTheta}, from a $\pm0.5^\circ$ tolerance \\
+$u_T$ & air temperature & 0.3 K & B & \texttt{cfg.uTair} \\
+$u_p$ & barometric pressure & 50 Pa & B & \texttt{cfg.uPbaro} \\
+$n$ & repeats per reading & 3 & --- & three columns per row in \texttt{readings.csv} \\
+$k$ & coverage factor for the 95\,\% figure & 2 & --- & \texttt{cfg.sepUncK} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+All entries except $u_{\text{scale}}$ are quantities whose true value is unknown and only a range is
+known, so the default GUM treatment applies: rectangular distribution, standard uncertainty equal
+to half-width divided by $\sqrt{3}$. The $0.5^\circ$ behind $u_\theta$ is an assumption
+(Section~\ref{sec:theta}), not data from the handout.
+
+\section{Uncertainty of \Cp}
+
+\subsection{The three partial derivatives}
+
+With $A = h_i - h_s$, $B = h_t - h_s$ and the three readings independent:
+
+\begin{equation}
+\frac{\partial \Cp}{\partial h_i} = \frac{1}{B}, \qquad
+\frac{\partial \Cp}{\partial h_t} = -\frac{\Cp}{B}, \qquad
+\frac{\partial \Cp}{\partial h_s} = \frac{\Cp - 1}{B}
+\end{equation}
+
+The second and third are not constants: $h_t$ and $h_s$ sit in both numerator and denominator, so
+their weight depends on \Cp{} itself. This is why $u(\Cp)$ is larger at the suction peak than at
+stagnation --- there $\Cp \approx -2.3$ and the $(\Cp - 1)$ factor amplifies the static-tube error
+more than threefold.
+
+\subsection{Single-point combination}
+
+\begin{equation}
+u(\Cp) = \frac{u}{B}\sqrt{1 + \Cp^2 + (\Cp - 1)^2}
+\end{equation}
+
+$B = |h_t - h_s|$ in mm, so the right-hand side is dimensionless. At low speed $B \approx 18.7$\,mm
+and at high speed $B \approx 72.4$\,mm: the entire low-versus-high difference comes from $B$.
+
+\subsection{Correlation between tappings in one run}
+
+The tappings are not independent --- they share one $h_s$ and one $h_t$:
+
+\begin{equation}
+\operatorname{Cov}(C_{p,i}, C_{p,j}) = \left(\frac{u}{B}\right)^2
+\bigl[\,C_{p,i} C_{p,j} + (C_{p,i} - 1)(C_{p,j} - 1)\,\bigr], \qquad i \neq j
+\end{equation}
+
+The first term comes from the shared total tube, the second from the shared static tube, and both
+carry a positive sign: a static tube reading high pushes every \Cp{} down together, so the errors
+add rather than cancel. Dropping this $28\times28$ covariance when integrating for \CD{} understates
+$u(\CD)$ by roughly a factor of two.
+
+\subsection{Numbers}
+
+\begin{table}[H]
+\centering
+\caption{Single-point $u(\Cp)$ ($B = 18.7$\,mm low, $72.4$\,mm high; $u = 0.5$\,mm)}
+\small
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+Case & $\Cp = +1$ (stagnation) & $\Cp = -2.3$ (peak) & $\Cp = 0$ & $u(\CD)$ \\
+\midrule
+low speed, 15.5 m/s & 0.038 & 0.110 & 0.055 & 0.040 \\
+high speed, 30.5 m/s & 0.010 & 0.028 & 0.014 & 0.010 \\
+low speed, 1 mm reading error & 0.081 & --- & --- & 0.081 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 1\,mm row is the range estimate: reading the column to 1\,mm instead of 0.5\,mm doubles
+$u(\CD)$ to 0.081. That is why coarse estimation at low speed is not acceptable.
+
+\section{Uncertainty of \CD}
+
+\subsection{Where the weights come from}
+
+$\CD = \int_0^{\pi} \Cp \cos\theta \,\mathrm{d}\theta$, evaluated with \texttt{trapz} rather than
+uniform summation, because the 28 angles are not equally spaced: $5^\circ$ steps near
+$0$--$20^\circ$, $5$--$10^\circ$ in the middle, $10$--$15^\circ$ towards $180^\circ$. \texttt{trapz}
+assigns interior weights $(\theta_{i+1} - \theta_{i-1})/2$ and half that at the two ends. These
+weights set both the value of \CD{} and the coefficients $g_i = w_i \cos\theta_i$ used in propagation.
+
+\subsection{Closed form}
+
+Let $s = u/B$ and substitute the three partials into $\CD = \sum g_i C_{p,i}$. Expanding the covariance
+fully, the cross terms collapse into
+
+\begin{equation}
+u(\CD) = s\sqrt{\sum_i g_i^2 + \Bigl(\sum_i g_i (C_{p,i} - 1)\Bigr)^2 + \Bigl(\sum_i g_i C_{p,i}\Bigr)^2}
+\end{equation}
+
+Reading the three terms: the first is each tapping's own random error (uncorrelated, so plain
+sum of squares); the second is the static-tube common-mode error with weight $(C_{p,i} - 1)$; the third
+is the total-tube common-mode error with weight $C_{p,i}$. Both common-mode terms are squared after
+summation, which is precisely what a correlated error looks like.
+
+\subsection{Per-tapping measured version}
+
+With three repeats per tapping in \texttt{readings.csv}, $u$ becomes a per-tapping
+$u_{\text{tap},i}$ and the expression splits:
+
+\begin{align}
+A &= \frac{1}{B^2}\sum_i g_i^2\Bigl[\,u_{\text{tap},i}^2 + (C_{p,i} u_t)^2 + \bigl((C_{p,i}-1)u_s\bigr)^2\,\Bigr] \\
+B_1 &= \left(\frac{u_t}{B}\right)^2\Bigl[\Bigl(\sum_i g_i C_{p,i}\Bigr)^2 - \sum_i (g_i C_{p,i})^2\Bigr] \\
+B_2 &= \left(\frac{u_s}{B}\right)^2\Bigl[\Bigl(\sum_i g_i (C_{p,i}-1)\Bigr)^2 - \sum_i \bigl(g_i (C_{p,i}-1)\bigr)^2\Bigr] \\
+u(\CD) &= \sqrt{A + B_1 + B_2}
+\end{align}
+
+The subtracted terms in $B_1$ and $B_2$ are the within-tapping parts already counted in $A$;
+without them the double counting would inflate the result.
+
+\subsection{The two angular terms}
+
+Tapping positions were never in the model above. Position errors come in two flavours with
+completely different propagation; they cannot be merged into one number.
+
+\textbf{Per-tapping random part.} Tapping $i$ sits at $\theta_i + e_i$ with $e_i$ independent and
+standard deviation $u_\theta$. Displace that tapping alone by $\pm u_\theta$, re-integrate the whole
+\CD, take the central difference, and combine over all 28:
+
+\begin{equation}
+u(\CD)_{\text{taps}} = \sqrt{\sum_i \left[\frac{\CD(\theta + e_i) - \CD(\theta - e_i)}{2}\right]^2}
+\end{equation}
+
+Re-integrating rather than writing an analytic derivative avoids a three-branch formula: moving one
+tapping also changes the width of the two trapezoids on either side of it. On the demo data this
+term evaluates to 0.0088.
+
+\textbf{Rigid rotation.} Hole 1 ($-30^\circ$) and hole 7 ($+30^\circ$) are mirror images and should
+read the same. A difference $\Delta C_{p,30}$ can only mean the whole ring sits at
+$\Delta\theta$ relative to the flow. With $g$ the measured slope at $30^\circ$,
+$\Cp(\mp 30 + \Delta\theta) \approx P \mp g\Delta\theta$, so subtracting gives
+$\Delta C_{p,30} = -2g\Delta\theta$ and
+
+\begin{equation}
+\Delta\theta = -\frac{\Delta C_{p,30}}{2g}, \qquad
+g = \left.\frac{\mathrm{d}\Cp}{\mathrm{d}\theta}\right|_{30^\circ}
+\text{ from the $20^\circ$ and $40^\circ$ holes}
+\end{equation}
+
+Its effect on \CD{} is the difference obtained by shifting the whole curve,
+$|\CD(\theta + \Delta\theta) - \CD(\theta)|$, treated as a bias and never averaged away against the
+per-tapping term. On the demo data $\Delta\theta = -0.05^\circ$ and this term is 0.0022.
+
+\subsection{Combined result}
+
+\begin{table}[H]
+\centering
+\caption{Breakdown of $u(\CD')$ on the demo data (conservative 0.5\,mm model)}
+\small
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+run & $\CD'$ & reading & per-tap angle & rotation & total $u(\CD')$ & relative \\
+\midrule
+smooth, low & 1.109 & 0.040 & 0.0088 & 0.0022 & 0.0449 & 4.0\,\% \\
+smooth, high & 0.925 & 0.010 & 0.0079 & 0.0022 & 0.0127 & 1.4\,\% \\
+tripped, low & 0.465 & 0.022 & 0.0066 & 0.0048 & 0.0236 & 5.1\,\% \\
+tripped, high & 0.597 & 0.007 & 0.0070 & 0.0009 & 0.0098 & 1.6\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Worth noticing: at high speed the angular term is nearly the size of the reading term (0.007 against
+0.007). The pressure measurement has become good enough that the bottleneck is now geometry. That
+belongs in the report, because it changes which dataset you should trust.
+
+\section{Uncertainty of $\theta$}
+\label{sec:theta}
+
+\subsection{The 0.29$^\circ$ assumption}
+
+Tapping position error is a machining tolerance with neither repeats nor a known distribution, so
+it is treated as rectangular over $\pm0.5^\circ$:
+
+\begin{equation}
+u_\theta = \frac{0.5^\circ}{\sqrt{3}} = 0.289^\circ \approx 0.29^\circ
+\end{equation}
+
+The $\pm0.5^\circ$ is an assumption about dividing-head practice; the handout does not quote a
+tolerance, which makes this the only number in the model set by judgement. If a real tolerance
+$T$ becomes available, set \texttt{cfg.uTheta} to $T/\sqrt{3}$. All 28 holes share one value: they
+come from one machining pass, are identically distributed, and there is no reason to make them differ.
+
+\subsection{Uncertainty of the separation angle itself}
+
+The separation point is found by a slope criterion: after the suction peak, the first place where
+the slope is near zero and stays near zero over the following $12^\circ$. It is noise-sensitive,
+estimated as slope noise over curvature:
+
+\begin{equation}
+u(\theta_{\text{sep}})_{\text{slope}} = \frac{\sigma_{\text{slope}}}{|\mathrm{d}^2 \Cp/\mathrm{d}\theta^2|}
+\end{equation}
+
+clipped below at half a tapping pitch (two holes cannot resolve a position between them) and above
+at $45^\circ$. The upper clip fires when the separation point approaches $180^\circ$ and the tail
+is nearly flat --- the criterion has effectively stopped working. The demo values are
+$2.5^\circ$, $2.5^\circ$, $19.9^\circ$, $4.0^\circ$; the third is direct evidence of that failure and
+should not be read as a well-measured angle.
+
+\subsection{Combining}
+
+\begin{equation}
+u(\theta_{\text{sep}}) = \sqrt{u(\theta_{\text{sep}})^2_{\text{slope}} + u_\theta^2 + \Delta\theta^2}
+\end{equation}
+
+In practice $u_\theta = 0.29^\circ$ and $\Delta\theta \approx 0.1^\circ$ are far smaller than the
+slope term, so the value barely changes; their role is to provide a floor when the data happen to
+smooth into a very sharp criterion.
+
+\section{Uncertainty of \ReD}
+\label{sec:re}
+
+\subsection{The chain and the $+0.5$}
+
+Take logarithmic differentials, remembering that $\rho$ appears twice --- once in $\rho U d$ and
+once through $U = \sqrt{2q/\rho}$:
+
+\begin{align}
+\mathrm{d}\ln U &= 0.5\,\mathrm{d}\ln q - 0.5\,\mathrm{d}\ln\rho \\
+\mathrm{d}\ln \ReD &= 0.5\,\mathrm{d}\ln\rho + 0.5\,\mathrm{d}\ln q - \mathrm{d}\ln\mu
+\end{align}
+
+Hence $+0.5$ on $\rho$, not a minus sign. The three inputs are independent:
+
+\begin{equation}
+\frac{u(\ReD)}{\ReD} = \sqrt{\left(0.5\frac{u(q)}{q}\right)^2
++ \left(0.5\frac{u(\rho)}{\rho}\right)^2 + \left(\frac{u(\mu)}{\mu}\right)^2}
+\end{equation}
+
+with
+$\dfrac{u(q)}{q} = \dfrac{\sqrt{u_s^2 + u_t^2}}{B}$,
+$\dfrac{u(\rho)}{\rho} = \sqrt{\left(\dfrac{u_p}{p}\right)^2 + \left(\dfrac{u_T}{T}\right)^2}$,
+$\dfrac{u(\mu)}{\mu} = \left|\dfrac{1.5}{T} - \dfrac{1}{T+S}\right|u_T$,
+the last being the analytic sensitivity of Sutherland's law.
+
+\subsection{The corrected \ReD{} carries one more term}
+
+$V/V' = 1 + 0.25\,\CD'(d/b) + 0.82(d/b)^2$ depends on $\CD'$, which has its own uncertainty:
+
+\begin{equation}
+u(V/V') = 0.25\,(d/b)\,u(\CD')
+\end{equation}
+
+\begin{equation}
+\frac{u(\ReD')}{\ReD'} = \sqrt{\left(\frac{u(\ReD)}{\ReD}\right)^2
++ \left(\frac{u(V/V')}{V/V'}\right)^2}
+\end{equation}
+
+On the demo this is only 0.22\,\% (low) and 0.05\,\% (high), because $0.25(d/b) \approx 0.055$
+multiplied by $u(\CD') \approx 0.045$ is small. It is kept so that the correction itself is
+accountable.
+
+\subsection{Numbers}
+
+\begin{table}[H]
+\centering
+\caption{Breakdown of $u(\ReD)$ (demo, conservative 0.5\,mm model)}
+\small
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+case & $u(q)/q$ & $u(\rho)/\rho$ & $u(\mu)/\mu$ & $u(\ReD')/\ReD'$ & $V/V'$ & $u(\ReD)/\ReD$ \\
+\midrule
+low speed & 3.79\,\% & 0.113\,\% & 0.079\,\% & 1.90\,\% & 0.221\,\% & 1.91\,\% \\
+high speed & 0.98\,\% & 0.113\,\% & 0.079\,\% & 0.50\,\% & 0.049\,\% & 0.50\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The halved $q$ term still dominates; $\rho$ and $\mu$ together stay under 0.14\,\%. Conclusion:
+$u(\ReD)$ can only be reduced by reading the column better, no matter how precisely the room
+temperature is measured.
+
+\section{Presentation rules}
+
+\begin{table}[H]
+\centering
+\caption{How each quantity appears in the figures and the CSV}
+\small
+\begin{tabularx}{\textwidth}{@{}l X l X@{}}
+\toprule
+Quantity & figure & CSV column & how to quote it \\
+\midrule
+$u(\Cp)$ & nested bars per tapping: $1\sigma$ solid, $2\sigma$ thin pale & \texttt{u\_Cp\_peak} &
+one value at the suction peak characterises the run \\
+$u(\CD')$ & nested vertical bars on the \CD--\ReD{} plot & \texttt{u\_CD} & quote absolute and relative \\
+$u(\ReD)$ & horizontal bar on the \CD--\ReD{} plot ($1\sigma$ only) & not written & percentage in figure and text only \\
+tapping angle & horizontal bar on the \Cp--$\theta$ plot & --- & state it is an assumption \\
+$u(\theta_{\text{sep}})$ & horizontal segment at the separation marker & \texttt{u\_thetaSep} &
+always mention the criterion's own limitation \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+One rule: every point carries two levels --- $1\sigma$ as a solid capped bar, $2\sigma$ as a thin pale
+bar drawn outside it --- so the reader never has to guess which sigma a bar represents. A 95\,\%
+figure must still state $k=2$, and the bar length must not be quoted as $U_{95}$ ($2\sigma$ equals
+$U_{95}$ only for a normal distribution with enough degrees of freedom).
+
+Each figure in \texttt{results/} is written twice: \texttt{.fig} for editing in MATLAB and
+\texttt{.pdf} (vector) for \texttt{\textbackslash includegraphics} in this report.
+\texttt{cfg.figFormat} switches the export to \texttt{'eps'} or \texttt{'png'} if needed.
+
+\section{Known limitations}
+
+\begin{table}[H]
+\centering
+\caption{Limitations and their effect on the conclusions}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.0cm} X X@{}}
+\toprule
+limitation & effect & how to phrase it \\
+\midrule
+blockage ratio 22.2\,\%, Roshko calibrated to 13.6\,\%, 1.63$\times$ extrapolation &
+the validity of the correction is itself in doubt; a few points of the 10\,\% correction may be extrapolation error &
+report corrected and uncorrected side by side, never the corrected one alone \\
+$\pm0.5^\circ$ tolerance is assumed &
+the angular part of $u(\CD)$ may be off by a factor of two &
+say ``assuming $\pm0.5^\circ$'', and give the value for $0.1^\circ$ \\
+the $\pm30$ difference collapses into one equivalent rotation &
+true asymmetry (hole depth, cylinder not perpendicular) is folded in &
+call it ``equivalent rotation'', not ``alignment error'' \\
+the separation criterion fails at the tail &
+$u(\theta_{\text{sep}})$ reaches $19.9^\circ$ on tripped low (45$^\circ$ with the measured model) &
+quote the suction-peak angle as well; it does not depend on the criterion \\
+no cross-run correlation treatment &
+same manometer, same tappings, so errors are partly common &
+compare runs side by side, do not weight-average across them \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Code map}
+
+When the viva asks where a number comes from, this table answers it. Line numbers refer to the
+current version.
+
+\begin{table}[H]
+\centering
+\caption{Where each output is computed}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.6cm} p{4.2cm} X@{}}
+\toprule
+output & file & implementation note \\
+\midrule
+\texttt{cfg.uRead / uScale / uTheta / uTair / uPbaro} & \texttt{cylinder\_lab.m}, lines 68--78 &
+all assumptions in one block \\
+$u(\Cp)$, $u(\CD')$, slope part of $u(\theta_{\text{sep}})$ & \texttt{cpUncertainty.m} &
+covariance handled here and nowhere else \\
+$\Delta\theta$ and $u(\CD)_{\text{taps}}$ & \texttt{runUncertainty.m}, lines 87--108 &
+per-tapping central difference plus rigid shift \\
+$u(\ReD)$ chain & \texttt{runUncertainty.m}, lines 60--80 &
+$q \to U \to \ReD$ with $\rho$, $\mu$, $V/V'$ terms \\
+$\Delta\theta$ from the $\pm30$ pair & \texttt{cylinder\_lab.m}, lines 289--304 &
+$\Delta C_{p,30}$ with the $20^\circ/40^\circ$ central-difference slope \\
+bar lengths & \texttt{sigmaCp / sigmaCD / thetaBar / separationBar} &
+measured when available, conservative otherwise \\
+CSV \texttt{u\_} columns & \texttt{writeCsv} & 29 columns, returned uncertainties only \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Viva questions}
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+\item \textbf{Why is \Cp{} only a ratio of column differences?}\\
+Ethanol density, gravity, scale zero and connection direction all cancel. Only the ratio of
+differences matters. The sign convention does not change the result, but which Pitot tube is total
+must be decided physically.
+
+\item \textbf{Why is $u(\Cp)$ larger at the suction peak?}\\
+$\partial \Cp/\partial h_s = (\Cp - 1)/B$; at $\Cp \approx -2.3$ this is more than three, so the
+static-tube error is amplified.
+
+\item \textbf{Why can't the per-tapping $u(\Cp)$ simply be added in quadrature for \CD?}\\
+They share $h_s$ and $h_t$; the covariance is positive, and ignoring it roughly halves $u(\CD)$.
+
+\item \textbf{Why \texttt{trapz} rather than uniform summation?}\\
+The 28 angles are uneven ($5^\circ$, $10^\circ$, $15^\circ$ mixed); uniform weights would
+over-weight the sparse region.
+
+\item \textbf{Why are there two angular terms?}\\
+Per-tapping errors dilute as $\sqrt{N}$ over 28 holes; a rigid rotation is common mode and does not
+dilute at all, entering linearly.
+
+\item \textbf{How does the $\pm30$ difference become an angle?}\\
+By symmetry the two points should read the same; the difference means the ring is rotated.
+$\Cp(\mp30 + \Delta\theta) \approx P \mp g\Delta\theta$ gives $\Delta C_{p,30} = -2g\Delta\theta$.
+
+\item \textbf{Why measure $g$ instead of using the potential-flow $-4\sin 2\theta$?}\\
+The boundary layer flattens \Cp{} near $30^\circ$; the measured slope is about 70\,\% of theory,
+and using theory would systematically shrink $\Delta\theta$.
+
+\item \textbf{Why is the coefficient on $\rho$ in $u(\ReD)$ equal to $+0.5$?}\\
+$\rho$ enters through $\rho U d$ and through $U = \sqrt{2q/\rho}$; adding gives $+1 - 0.5 = +0.5$.
+
+\item \textbf{What does 0.5 mm versus 1 mm cost?}\\
+$u(\CD)$ goes from 0.040 to 0.081 --- it doubles. Reading accuracy sets the credibility of the whole
+conclusion.
+
+\item \textbf{Is the $19.9^\circ$ a data problem or a criterion problem?}\\
+A criterion problem: the tail is nearly flat, the slope threshold sits at noise level and the
+criterion stops working. Quote the suction-peak angle, which does not depend on it.
+\end{enumerate}
+
+\end{document}

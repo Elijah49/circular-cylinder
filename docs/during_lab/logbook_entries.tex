@@ -1,0 +1,201 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.6cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage{titlesec}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\bl}[1]{\rule{#1}{0.4pt}}
+\newcommand{\bS}{\bl{1.1cm}}
+\newcommand{\bM}{\bl{1.6cm}}
+\newcommand{\bL}{\bl{6.2cm}}
+\newcommand{\ck}{\ensuremath{\square}}
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\thsep}{\ensuremath{\theta_{\text{sep}}}}
+\newcommand{\DCP}{\ensuremath{\Delta C_{p,30}}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\newcommand{\gl}[1]{\par\noindent
+  \makebox[2.0cm][l]{\textbf{#1}}%
+  \rule{\dimexpr\linewidth-2.0cm\relax}{0.3pt}\par\vspace{7pt}}
+
+\newcommand{\htable}{%
+\footnotesize
+\renewcommand{\arraystretch}{1.45}%
+\begin{tabular}{@{}c r @{\hspace{2mm}}|@{\hspace{2mm}} p{1.95cm} | p{1.95cm} | p{1.95cm}
+                  @{\hspace{8mm}} c r @{\hspace{2mm}}|@{\hspace{2mm}} p{1.95cm} | p{1.95cm} | p{1.95cm}@{}}
+\toprule
+No & $\theta$ & $r_1$ & $r_2$ & $r_3$ & No & $\theta$ & $r_1$ & $r_2$ & $r_3$ \\
+\midrule
+1 & $-30$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 15 & $80$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+2 & $0$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 16 & $85$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+3 & $5$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 17 & $90$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+4 & $10$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 18 & $95$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+5 & $15$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 19 & $100$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+6 & $20$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 20 & $105$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+7 & $30$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 21 & $110$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+8 & $40$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 22 & $115$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+9 & $50$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 23 & $120$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+10 & $55$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 24 & $130$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+11 & $60$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 25 & $140$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+12 & $65$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 26 & $150$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+13 & $70$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 27 & $165$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+14 & $75$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & 28 & $180$ & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} & \rule[-2.5pt]{1.85cm}{0.4pt} \\
+\bottomrule
+\end{tabular}\par}
+
+\newcommand{\runcard}[1]{%
+\needspace{11.9cm}%
+\subsection*{Entry #1 \hfill \normalsize ``Run \bS''}
+{\small
+Wire \ck\ none \quad \ck\ fitted: position \bS\,$^\circ$, dia \bS\,mm \quad
+Engine \bS\ rpm \quad $B=h_t-h_s$ = \bS\,mm\par
+\vspace{1pt}
+$T$ = \bS\,$^\circ$C \quad $p$ = \bM\,Pa \quad scale = \bS\,mm/div \quad
+\ck\ settled \quad \ck\ one pass\par
+\vspace{1pt}
+Purpose \bl{14.2cm}\par}
+\vspace{2pt}
+\htable
+\vspace{3pt}
+{\footnotesize\itshape mm, to 0.1. Rows 1/7 = the $\pm30^\circ$ pair; rows 6/8 give the slope $g$. Columns $r_1,r_2,r_3$ = \texttt{r\_1,r\_2,r\_3} in the CSV.}
+\vspace{2pt}
+\gl{Did}\gl{Saw}\gl{Decided}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries During-lab logbook entries}\\[4pt]
+{\large Cylinder pressure distribution --- RODH 115 (ex L50)}\\[4pt]
+{\small One heading below $=$ one Immutalog entry. Title and date on every entry.}
+\end{center}
+
+\section*{Entry 0 \hfill \normalsize session header}
+
+\begin{tabularx}{\textwidth}{@{}lX lX@{}}
+\toprule
+Date & \bM & Session start (time) & \bM \\
+Room / rig & \bM & Wind-off end (time) & \bM \\
+Partner & \bM & Demonstrator (GTA) & \bM \\
+Logbook no. & \bM & Attachments to zip & \bl{3.6cm} \\
+\bottomrule
+\end{tabularx}
+
+\section*{Entry 1 \hfill \normalsize ``Session start --- ambient, Pitot identification''}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Air temperature & $T_1$ = \bS\,$^\circ$C \quad $T_2$ = \bS\,$^\circ$C \quad mean = \bS\,$^\circ$C \quad $T_3$ = \bS\,$^\circ$C \\
+Barometric pressure & $p_1$ = \bM\,Pa \quad $p_2$ = \bM\,Pa \quad $p_3$ = \bM\,Pa \quad mean = \bM\,Pa \\
+Manometer scale & \bS\,mm per division (one value for the session, sets the type-B term) \\
+\bottomrule
+\end{tabularx}
+
+\vspace{2pt}
+\begin{tabularx}{\textwidth}{@{}p{3.9cm}X@{}}
+\toprule
+Assignment & A $\rightarrow$ \ck\,35 \quad \ck\,36 \qquad B $\rightarrow$ \ck\,35 \quad \ck\,36 \qquad total = \hrulefill \\
+Which is static & \ck\ open end faces the flow \quad \ck\ closed end, side holes only \quad \ck\ read off the label \\
+Level test & 600 $\rightarrow$ 1000 rpm: A \bS\,mm, B \bS\,mm (signed) --- LOWER level = total tube \\
+Range test & $B$ = \bS\,mm $\Rightarrow q=\rho_e gB$ = \bS\,Pa \quad vs \quad $\tfrac12\rho_{\text{air}}U^2$ = \bS\,Pa \\
+Stagnation test & $\Cp(\text{hole }2)$ = \bS \quad (expect $+1.00$; near $0$ means the two tubes are swapped) \\
+Pre-run checks & \ck\ no leak \quad \ck\ zero set \quad \ck\ tapping at 180$^\circ$ clear \\
+Decision / note & \hrulefill \\
+\bottomrule
+\end{tabularx}
+
+\section*{Entry 2 \hfill \normalsize ``Preliminary assessment --- $\pm30^\circ$ alignment''}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Readings & $\Cp(+30^\circ)$ = \bM \qquad $\Cp(-30^\circ)$ = \bM \\
+Difference & $\DCP=\Cp(-30^\circ)-\Cp(+30^\circ)$ = \bM \\
+Rotation & $\delta=\DCP/0.121$ = \bS\,$^\circ$ \\
+Verdict & \ck\ $|\DCP|<0.01$ ($<0.1^\circ$) --- accept \\
+        & \ck\ $0.01$--$0.12$ --- record it, carry $\delta$ into the $\theta$ bar, keep going \\
+        & \ck\ $>0.12$ ($>1^\circ$) --- rotate the cylinder and repeat \\
+Action taken & \hrulefill \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\section*{Entries 3--6 \hfill \normalsize one per run --- fill in while the rig is running}
+
+\runcard{3}
+
+\runcard{4}
+\clearpage
+\runcard{5}
+
+\runcard{6}
+
+\clearpage
+\section*{Entry 7 \hfill \normalsize ``Post-run checks and anomalies''}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Drift & $T$ moved by \bS\,$^\circ$C during the session; $B$ changed by \bS\,mm \\
+Suspect points & hole(s) \bL\ reason: \hrulefill \\
+Repeated & \ck\ none \quad \ck\ run(s) \bS\ because \hrulefill \\
+Liquid level & \ck\ returned to zero \quad \ck\ drift of \bS\,mm, corrected by \dots \\
+Anything unexplained & \hrulefill \\
+\bottomrule
+\end{tabularx}
+
+\section*{Entry 8 \hfill \normalsize ``Summary --- numbers to carry forward''}
+
+\begin{tabularx}{\textwidth}{@{}p{0.9cm}p{1.4cm}p{1.3cm}p{1.5cm}p{1.8cm}p{1.9cm}p{1.5cm}X@{}}
+\toprule
+Run & Wire & rpm & $B$ [mm] & $\ReD'$ & $\thsep$ [$^\circ$] & $\CD'$ & Remark \\
+\midrule
+1 & none & \bS & \bS & \bS & \bS & \bS & \\
+2 & none & \bS & \bS & \bS & \bS & \bS & \\
+3 & fitted & \bS & \bS & \bS & \bS & \bS & \\
+4 & fitted & \bS & \bS & \bS & \bS & \bS & \\
+5 & fitted & \bS & \bS & \bS & \bS & \bS & \\
+\bottomrule
+\end{tabularx}
+
+\vspace{2pt}
+{\small Run-level columns in \texttt{readings.csv}: \texttt{run, tripped, rpm, scale\_mm, Tair\_C\_1..3, pBaro\_Pa\_1..3}; hole-level rows: \texttt{hole, r\_1, r\_2, r\_3}.}
+
+\vspace{4pt}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Most trustworthy run & \bS\ because \hrulefill \\
+Would repeat & \bS\ if time allowed, because \hrulefill \\
+Handover & \ck\ all readings on the sheet \quad \ck\ transcribed to \texttt{readings.csv} \quad \ck\ script and figures in the zip \\
+\bottomrule
+\end{tabularx}
+
+\vspace{2pt}
+{\small\itshape Lock the logbook and sign off after the last entry. Do not edit the exported PDF --- it re-saves and breaks the authenticity tag.}
+
+\section*{If something goes wrong \hfill \normalsize write it down, then act}
+
+\begin{tabularx}{\textwidth}{@{}>{\bfseries}p{4.2cm}X@{}}
+\toprule
+Column will not settle & shorten the wait, take three readings and quote their spread; note the wait time \\
+Single hole jumps & suspect a bubble --- re-read twice; if it repeats, flag the hole and carry on \\
+Rig shakes visibly & drop one speed step and note the rpm where it started \\
+Liquid drifts & re-zero against the free-stream reference, log the drift in mm \\
+Trip wire moves & re-check position before the next run, else runs 3 and 4 are not comparable \\
+Out of time & finish run 4, write entry 7, transcribe what you have \\
+\bottomrule
+\end{tabularx}
+
+\end{document}

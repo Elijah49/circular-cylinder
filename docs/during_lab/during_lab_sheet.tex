@@ -1,0 +1,471 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1.8cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{longtable}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\blank}{\rule{1.55cm}{0.4pt}}
+\newcommand{\nb}{\rule{1.9cm}{0.4pt}}
+\newcommand{\checkbox}{\ensuremath{\square}}
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\thsep}{\ensuremath{\theta_{\text{sep}}}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries During-lab record sheet}\\[3pt]
+{\large Pressure distribution on a circular cylinder --- RODH 115 (ex L50)}\\[6pt]
+{\small $d = 102$\,mm, $b = 460$\,mm, ethanol $\rho = 789$\,kg\,m$^{-3}$, 28 tappings + Pitot on 35/36}
+\end{center}
+
+\section*{Session header}
+\begin{tabularx}{\textwidth}{@{}llllX@{}}
+\toprule
+Date & \blank & Group & \blank & \\
+Names & \multicolumn{4}{X}{\hrulefill\quad \hrulefill\quad \hrulefill} \\
+\bottomrule
+\end{tabularx}
+
+\section*{Room conditions --- taken ONCE, before the first run}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Air temperature & $T_1$ = \blank\,$^\circ$C \qquad $T_2$ = \blank\,$^\circ$C \qquad
+$T_3$ = \blank\,$^\circ$C \\
+Barometric pressure & $p_1$ = \blank\,Pa \qquad $p_2$ = \blank\,Pa \qquad
+$p_3$ = \blank\,Pa \\
+Manometer scale & \blank\,mm per division \quad (this sets the type-B term, one value for the session) \\
+\bottomrule
+\end{tabularx}
+
+\section*{Pitot identification --- do this in the first minute}
+\begin{tabularx}{\textwidth}{@{}llllX@{}}
+\toprule
+Tube & Reading & Assigned & Check & \\
+\midrule
+35 & \blank\,mm & \checkbox\ static \quad \checkbox\ total & \\
+36 & \blank\,mm & \checkbox\ static \quad \checkbox\ total & \\
+\midrule
+\multicolumn{4}{@{}X@{}}{Check: the tube whose column matches hole 2 (stagnation) is TOTAL.
+Also $q=\rho_e g B$ should match $\tfrac12\rho U^2$: $\approx146$\,Pa at 700\,rpm,
+$\approx559$\,Pa at 1350\,rpm.} \\
+\bottomrule
+\end{tabularx}
+
+\section*{Alignment check --- from the $\pm30^\circ$ pair, every run}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+Run & $\theta$ set to $0^\circ$ at hole 2? & $\Cp(+30^\circ)$ & $\Cp(-30^\circ)$ & $|\Delta\Cp{}_{30}|$ (accept $<0.01$, sign gives the direction) \\
+\midrule
+1 & \checkbox & \blank & \blank & \blank \\
+2 & \checkbox & \blank & \blank & \blank \\
+3 & \checkbox & \blank & \blank & \blank \\
+4 & \checkbox & \blank & \blank & \blank \\
+5 & \checkbox & \blank & \blank & \blank \\
+\bottomrule
+\end{tabularx}
+{\small Read the magnitude: below $0.01$ ($\approx0.08^\circ$) is excellent; $0.01$--$0.12$
+($\approx0.1^\circ$--$1^\circ$) record it and carry it into the $\theta$ error bar;
+above $0.12$ ($\approx1^\circ$, the code's warning line) rotate the cylinder and repeat,
+because that rotation passes straight into $\thsep$. The sign tells you which way to turn.}
+
+\section*{Before the first run --- tick all five}
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+\item \checkbox\ All 28 tapping tubes plus 35 and 36 are connected and numbered; no tube is pinched.
+\item \checkbox\ No bubbles in the limbs; ethanol level stable with the tunnel off.
+\item \checkbox\ Cylinder seated, wire not fitted for runs 1--2, wire position noted for runs 3--5.
+\item \checkbox\ Tunnel speed control at zero before start; nothing loose in the test section.
+\item \checkbox\ This sheet, the logbook and something to lean on (the tubes are read at eye level).
+\end{enumerate}
+
+{\small\textbf{Reading discipline:} three readings per tapping, all 30 columns in one pass, tunnel
+settled first. A single reading silently triples $u(\CD')$ because the type-A term disappears.}
+
+\clearpage
+
+\clearpage
+\section*{Run 1 \hfill \normalsize laminar baseline}
+
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{2.7cm}p{3.0cm}X@{}}
+\toprule
+Run & 1 & Boundary layer & laminar (no wire) \\
+Engine setting & 700 rpm & Target $U'$ & ≈15.5 m/s \\
+Trip wire & not fitted & Purpose & laminar baseline \\
+Start & \blank & End & \blank \\
+Reader & \blank & Group & \blank \\
+\bottomrule
+\end{tabularx}
+
+{\small Settled before reading? \checkbox\ yes \qquad All 30 columns in one pass? \checkbox\ yes\par
+Air $T$ = \blank\,$^\circ$C \qquad $p$ = \blank\,Pa \qquad
+scale = \blank\,mm/div \qquad $B=h_t-h_s$ = \blank\,mm}
+
+\vspace{6pt}
+\begin{longtable}{@{}p{1.0cm}p{1.5cm}p{2.55cm}p{2.55cm}p{2.55cm}p{3.4cm}@{}}
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endfirsthead
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endhead
+\quad 1 & -30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 2 & 0 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 3 & 5 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 4 & 10 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 5 & 15 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 6 & 20 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 7 & 30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 8 & 40 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 9 & 50 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 10 & 55 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 11 & 60 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 12 & 65 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 13 & 70 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 14 & 75 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 15 & 80 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 16 & 85 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 17 & 90 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 18 & 95 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 19 & 100 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 20 & 105 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 21 & 110 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 22 & 115 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 23 & 120 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 24 & 130 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 25 & 140 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 26 & 150 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 27 & 165 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 28 & 180 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 35 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 36 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\bottomrule
+\end{longtable}
+
+\vspace{4pt}
+{\small Anomalies (bubble, leak, stuck tap, drift): \hrulefill\par
+\hrulefill\par
+\hrulefill}
+
+\clearpage
+\section*{Run 2 \hfill \normalsize laminar, four times the dynamic head}
+
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{2.7cm}p{3.0cm}X@{}}
+\toprule
+Run & 2 & Boundary layer & laminar (no wire) \\
+Engine setting & 1350 rpm & Target $U'$ & ≈30.5 m/s \\
+Trip wire & not fitted & Purpose & laminar, four times the dynamic head \\
+Start & \blank & End & \blank \\
+Reader & \blank & Group & \blank \\
+\bottomrule
+\end{tabularx}
+
+{\small Settled before reading? \checkbox\ yes \qquad All 30 columns in one pass? \checkbox\ yes\par
+Air $T$ = \blank\,$^\circ$C \qquad $p$ = \blank\,Pa \qquad
+scale = \blank\,mm/div \qquad $B=h_t-h_s$ = \blank\,mm}
+
+\vspace{6pt}
+\begin{longtable}{@{}p{1.0cm}p{1.5cm}p{2.55cm}p{2.55cm}p{2.55cm}p{3.4cm}@{}}
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endfirsthead
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endhead
+\quad 1 & -30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 2 & 0 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 3 & 5 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 4 & 10 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 5 & 15 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 6 & 20 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 7 & 30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 8 & 40 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 9 & 50 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 10 & 55 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 11 & 60 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 12 & 65 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 13 & 70 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 14 & 75 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 15 & 80 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 16 & 85 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 17 & 90 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 18 & 95 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 19 & 100 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 20 & 105 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 21 & 110 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 22 & 115 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 23 & 120 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 24 & 130 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 25 & 140 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 26 & 150 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 27 & 165 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 28 & 180 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 35 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 36 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\bottomrule
+\end{longtable}
+
+\vspace{4pt}
+{\small Anomalies (bubble, leak, stuck tap, drift): \hrulefill\par
+\hrulefill\par
+\hrulefill}
+
+\clearpage
+\section*{Run 3 \hfill \normalsize tripped at the lower speed}
+
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{2.7cm}p{3.0cm}X@{}}
+\toprule
+Run & 3 & Boundary layer & tripped \\
+Engine setting & 700 rpm & Target $U'$ & ≈15.5 m/s \\
+Trip wire & fitted & Purpose & tripped at the lower speed \\
+Start & \blank & End & \blank \\
+Reader & \blank & Group & \blank \\
+\bottomrule
+\end{tabularx}
+
+{\small Settled before reading? \checkbox\ yes \qquad All 30 columns in one pass? \checkbox\ yes\par
+Air $T$ = \blank\,$^\circ$C \qquad $p$ = \blank\,Pa \qquad
+scale = \blank\,mm/div \qquad $B=h_t-h_s$ = \blank\,mm}
+
+\vspace{6pt}
+\begin{longtable}{@{}p{1.0cm}p{1.5cm}p{2.55cm}p{2.55cm}p{2.55cm}p{3.4cm}@{}}
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endfirsthead
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endhead
+\quad 1 & -30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 2 & 0 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 3 & 5 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 4 & 10 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 5 & 15 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 6 & 20 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 7 & 30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 8 & 40 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 9 & 50 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 10 & 55 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 11 & 60 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 12 & 65 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 13 & 70 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 14 & 75 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 15 & 80 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 16 & 85 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 17 & 90 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 18 & 95 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 19 & 100 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 20 & 105 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 21 & 110 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 22 & 115 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 23 & 120 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 24 & 130 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 25 & 140 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 26 & 150 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 27 & 165 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 28 & 180 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 35 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 36 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\bottomrule
+\end{longtable}
+
+\vspace{4pt}
+{\small Anomalies (bubble, leak, stuck tap, drift): \hrulefill\par
+\hrulefill\par
+\hrulefill}
+
+\clearpage
+\section*{Run 4 \hfill \normalsize tripped at the higher speed}
+
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{2.7cm}p{3.0cm}X@{}}
+\toprule
+Run & 4 & Boundary layer & tripped \\
+Engine setting & 1350 rpm & Target $U'$ & ≈30.5 m/s \\
+Trip wire & fitted & Purpose & tripped at the higher speed \\
+Start & \blank & End & \blank \\
+Reader & \blank & Group & \blank \\
+\bottomrule
+\end{tabularx}
+
+{\small Settled before reading? \checkbox\ yes \qquad All 30 columns in one pass? \checkbox\ yes\par
+Air $T$ = \blank\,$^\circ$C \qquad $p$ = \blank\,Pa \qquad
+scale = \blank\,mm/div \qquad $B=h_t-h_s$ = \blank\,mm}
+
+\vspace{6pt}
+\begin{longtable}{@{}p{1.0cm}p{1.5cm}p{2.55cm}p{2.55cm}p{2.55cm}p{3.4cm}@{}}
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endfirsthead
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endhead
+\quad 1 & -30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 2 & 0 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 3 & 5 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 4 & 10 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 5 & 15 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 6 & 20 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 7 & 30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 8 & 40 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 9 & 50 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 10 & 55 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 11 & 60 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 12 & 65 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 13 & 70 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 14 & 75 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 15 & 80 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 16 & 85 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 17 & 90 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 18 & 95 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 19 & 100 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 20 & 105 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 21 & 110 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 22 & 115 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 23 & 120 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 24 & 130 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 25 & 140 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 26 & 150 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 27 & 165 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 28 & 180 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 35 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 36 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\bottomrule
+\end{longtable}
+
+\vspace{4pt}
+{\small Anomalies (bubble, leak, stuck tap, drift): \hrulefill\par
+\hrulefill\par
+\hrulefill}
+
+\clearpage
+\section*{Run 5 \hfill \normalsize extra speed --- agree the setting with the GTA}
+
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{2.7cm}p{3.0cm}X@{}}
+\toprule
+Run & 5 & Boundary layer & tripped \\
+Engine setting & 1000 rpm & Target $U'$ & $\approx22$ m/s \\
+Trip wire & fitted & Purpose & mid-$Re$ point, same wire as 3--4 \\
+Start & \blank & End & \blank \\
+Reader & \blank & Group & \blank \\
+\bottomrule
+\end{tabularx}
+
+{\small Settled before reading? \checkbox\ yes \qquad All 30 columns in one pass? \checkbox\ yes\par
+Air $T$ = \blank\,$^\circ$C \qquad $p$ = \blank\,Pa \qquad
+scale = \blank\,mm/div \qquad $B=h_t-h_s$ = \blank\,mm}
+
+\vspace{6pt}
+\begin{longtable}{@{}p{1.0cm}p{1.5cm}p{2.55cm}p{2.55cm}p{2.55cm}p{3.4cm}@{}}
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endfirsthead
+\toprule
+No. & $\theta$ & $r_1$ [mm] & $r_2$ [mm] & $r_3$ [mm] & note \\
+\midrule
+\endhead
+\quad 1 & -30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 2 & 0 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 3 & 5 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 4 & 10 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 5 & 15 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 6 & 20 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 7 & 30 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 8 & 40 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 9 & 50 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 10 & 55 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 11 & 60 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 12 & 65 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 13 & 70 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 14 & 75 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 15 & 80 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 16 & 85 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 17 & 90 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 18 & 95 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 19 & 100 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 20 & 105 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 21 & 110 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 22 & 115 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 23 & 120 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 24 & 130 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 25 & 140 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 26 & 150 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 27 & 165 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 28 & 180 & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 35 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\quad 36 & Pitot & \blank & \blank & \blank & \hspace{2.2cm} \\
+\bottomrule
+\end{longtable}
+
+\vspace{4pt}
+{\small Anomalies (bubble, leak, stuck tap, drift): \hrulefill\par
+\hrulefill\par
+\hrulefill}
+\clearpage
+\section*{After the session}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Raw data transferred to \texttt{readings.csv}? & \checkbox\ yes \quad one row per tapping, columns \texttt{r\_1 r\_2 r\_3} \\
+Temperature and pressure entered? & \checkbox\ yes \quad three columns each, blanks fall back to \texttt{cfg.TairDefault} / \texttt{pBaroDefault} \\
+\texttt{scale\_mm} entered? & \checkbox\ yes \quad one value per run is enough \\
+Pitot order confirmed? & \checkbox\ yes \quad note here which tube was static: \blank \\
+Run kept or skipped? & \checkbox\ run 1 \quad \checkbox\ run 2 \quad \checkbox\ run 3 \quad \checkbox\ run 4 \quad \checkbox\ run 5 \\
+\bottomrule
+\end{tabularx}
+
+\section*{The seven numbers per run, for the logbook}
+Copy from the MATLAB printout, not from the figures.
+
+\begin{tabularx}{0.95\textwidth}{@{}lXXXX@{}}
+\toprule
+Run & $\CD'$ & $\CD{}_{\text{eq2}}$ & $\CD{}_{\text{int}}$ & $V/V'$ \\
+\midrule
+1 & \nb & \nb & \nb & \nb \\
+2 & \nb & \nb & \nb & \nb \\
+3 & \nb & \nb & \nb & \nb \\
+4 & \nb & \nb & \nb & \nb \\
+5 & \nb & \nb & \nb & \nb \\
+\bottomrule
+\end{tabularx}
+
+\vspace{2pt}
+
+\begin{tabularx}{0.95\textwidth}{@{}lXXXX@{}}
+\toprule
+Run & $\theta_{\text{sep}}$ [deg] & $\ReD'$ & $u(\CD')$ & $u(\theta_{\text{sep}})$ [deg] \\
+\midrule
+1 & \nb & \nb & \nb & \nb \\
+2 & \nb & \nb & \nb & \nb \\
+3 & \nb & \nb & \nb & \nb \\
+4 & \nb & \nb & \nb & \nb \\
+5 & \nb & \nb & \nb & \nb \\
+\bottomrule
+\end{tabularx}
+
+\vspace{4pt}
+{\small Also worth one line each, because the oral assessment asks for them: the equivalent
+Reynolds number of the tripped runs, the ring rotation $\Delta\theta_{\text{ring}}$, and the
+$\pm30^\circ$ mismatch.}
+
+\end{document}

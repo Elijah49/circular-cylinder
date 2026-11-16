@@ -1,0 +1,499 @@
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+\ctexset{
+  section/format = \Large\heiti\color{black},
+  section/aftername = \quad,
+  subsection/format = \large\heiti\color{black},
+  subsection/aftername = \quad,
+  subsubsection/format = \normalsize\heiti\color{black},
+  subsubsection/aftername = \quad,
+}
+
+\setlength{\parindent}{2em}
+\linespread{1.45}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\title{\heiti 圆柱绕流实验：不确定度与误差传递参考}
+\author{}
+\date{}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\heiti 圆柱绕流实验：不确定度与误差传递参考}\\[6pt]
+{\large 配套 \texttt{cylinder\_lab.m}、\texttt{cpUncertainty.m}、\texttt{runUncertainty.m} 的计算说明}\\[10pt]
+{\small Engineering Practice 2 -- Aerodynamics 2 \quad\textbar\quad RODH 115 (ex L50) \quad\textbar\quad
+$d = 102$\,mm，$b = 460$\,mm，$d/b = 0.2217$}
+\end{center}
+
+\vspace{6pt}
+
+\section{用途与约定}
+
+\subsection{三个文件的分工}
+
+这套计算被拆成三个文件，目的不是好看，而是让每一条公式只有一个出处，改一个假设只改一处。
+\texttt{cpUncertainty.m} 负责所有以 \Cp 为自变量的量：单个孔的 $u(\Cp)$、阻力系数的 $u(\CD')$、
+分离角的角度不确定度。\texttt{runUncertainty.m} 负责 \Cp 之外的东西：动压到速度到雷诺数这条链，
+以及测压孔的角位置误差。\texttt{cylinder\_lab.m} 只负责调用、打印和绘图，自己不推导任何公式。
+
+两个模块都是可选的：主脚本在调用前用 \texttt{exist} 检查文件是否存在，缺了就退回 NaN 并在控制台
+打印一行提示，实验不会因此中断。这样做是为了把脚本拷到实验室机器时不因为漏拷一个文件就跑不起来。
+
+\subsection{符号、覆盖因子与呈现约定}
+
+本文所有 $u$ 都是 $1\sigma$ 标准不确定度，不是 95\% 置信区间。需要报 95\% 时统一取 $k = 2$
+（\texttt{cfg.sepUncK}），即 $U_{95} = 2u$；这个 $k$ 值只是工程惯例，本实验的自由度远不足以
+严格确定包含因子。
+
+图上画的误差棒一律是 $1\sigma$，标题里写明。CSV 结果表里以 \texttt{u\_} 开头的列是 $1\sigma$，
+以 \texttt{U95} 开头的列是 $k=2$。两套数字同时存在是为了口试时能说清“棒长”和“报告值”的区别，
+不要混着引用。
+
+\section{测量链与输入量}
+
+\subsection{从液柱读数到 \Cp}
+
+多管压力计上每个孔给出一个液柱高度 $h_i$，静压管给出 $h_s$，总压管给出 $h_t$。压力系数写成差值之比：
+
+\begin{equation}
+\Cp{}_i = \frac{h_i - h_s}{h_t - h_s} = \frac{A}{B}
+\end{equation}
+
+乙醇密度 $\rho_e$、重力加速度 $g$、板子的刻度零点、板子上端还是下端接管，全部在比值里约掉。
+这也是为什么接法方向不影响 \Cp：接反了所有液柱都朝相反方向偏，分子分母同时变号。
+唯一真正需要现场判断的是“哪根 Pitot 管是总压管”，判据是孔 2（$\theta = 0$，驻点）的表面压力
+等于总压，所以读数与 $h(\text{孔 2})$ 相等的那根是总压管；两根都离驻点很远时退回取大者并打印提示。
+
+\subsection{从液柱到 $U$ 与 \ReD}
+
+动压、速度、密度、黏度和雷诺数按标准关系串起来：
+
+\begin{equation}
+q = \rho_e g\,|\Delta h|, \qquad U = \sqrt{\frac{2q}{\rho}}, \qquad \ReD = \frac{\rho U d}{\mu}
+\end{equation}
+
+\begin{equation}
+\rho = \frac{p}{RT}, \qquad \mu = \mu_0\left(\frac{T}{T_0}\right)^{1.5}\frac{T_0 + S}{T + S}
+\end{equation}
+
+这里的 $\Delta h = h_t - h_s$ 就是上面的 $B$。注意 $U$ 里出现的 $\rho$ 与 \ReD 里出现的 $\rho$
+是同一个量，这个重合会在第 \ref{sec:re} 节里决定一个 $+0.5$ 的系数，是最容易抄错的地方之一。
+
+\subsection{输入量与假设}
+
+\begin{table}[H]
+\centering
+\caption{不确定度模型用到的全部输入量}
+\small
+\begin{tabularx}{\textwidth}{@{}l p{3.9cm} p{2.5cm} c X@{}}
+\toprule
+符号 & 含义 & 取值 & 类型 & 来源与备注 \\
+\midrule
+$u$ & 单次液柱读数的不确定度 & 0.5 mm & A+B 合并，偏保守 & \texttt{cfg.uRead}；无重复读数时的兜底值 \\
+$u_{\text{scale}}$ & 板子刻度分度值引入的 B 类项 & 1.0 mm 分度 $\to$ 0.289 mm & B & \texttt{cfg.uScale}，矩形分布 $(1/2)/\sqrt{3}$ \\
+$u_\theta$ & 单个测压孔角位置的标准不确定度 & 0.29$^\circ$ & B & \texttt{cfg.uTheta}，按 $\pm0.5^\circ$ 公差 \\
+$u_{T}$ & 空气温度的不确定度 & 0.3 K & B & \texttt{cfg.uTair}，分辨率与室内梯度合并 \\
+$u_{p}$ & 大气压的不确定度 & 50 Pa & B & \texttt{cfg.uPbaro} \\
+$n$ & 每个读数的重复次数 & 3 & -- & \texttt{readings.csv} 每行三列重复读数 \\
+$k$ & 报告 95\% 时的包含因子 & 2 & -- & \texttt{cfg.sepUncK} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+表 1 里除 $u_{\text{scale}}$ 外，其余各项都是“不知道真实值、只知道区间”的量，按 GUM 默认取矩形分布，
+标准不确定度等于半宽除以 $\sqrt{3}$。$u_\theta$ 的 $0.5^\circ$ 是假设值（见 \ref{sec:theta}），
+不是 handout 给出的数据。
+
+\section{\Cp{} 的不确定度}
+
+\subsection{三个偏导}
+
+$\Cp = A/B$，其中 $A = h_i - h_s$、$B = h_t - h_s$。三个读数互相独立，对每个读数求偏导：
+
+\begin{equation}
+\frac{\partial \Cp}{\partial h_i} = \frac{1}{B}, \qquad
+\frac{\partial \Cp}{\partial h_t} = -\frac{\Cp}{B}, \qquad
+\frac{\partial \Cp}{\partial h_s} = \frac{\Cp - 1}{B}
+\end{equation}
+
+注意第二、三式里的 \Cp 不是常数而是该孔自己的值：$h_t$ 与 $h_s$ 既在分母又在分子里，
+所以它们的权重随 \Cp 变化。这也是为什么吸力峰处的 $u(\Cp)$ 反而比驻点处大——那里 $\Cp \approx -2.3$，
+$(\Cp - 1)$ 项把静压管的误差放大到三倍多。
+
+\subsection{单点合成}
+
+三个偏导独立，平方和开根号，再乘 $u$：
+
+\begin{equation}
+u(\Cp) = \frac{u}{B}\sqrt{1 + \Cp^2 + (\Cp - 1)^2}
+\end{equation}
+
+式中 $B$ 就是 $|h_t - h_s|$，单位为 mm，所以右边是纯数。低速时 $B \approx 18.7$\,mm，
+高速时 $B \approx 72.4$\,mm，同一个 $u$ 在高、低速之间的差别完全由 $B$ 决定。
+
+\subsection{同一次运行内各孔之间的相关性}
+
+各孔不是独立的：它们共用同一个 $h_s$ 和同一个 $h_t$。忽略这一点会把 \CD 的不确定度算小。
+两个孔 $i$、$j$ 的协方差为：
+
+\begin{equation}
+\operatorname{Cov}(C_{p,i}, C_{p,j}) = \left(\frac{u}{B}\right)^2
+\bigl[\,C_{p,i} C_{p,j} + (C_{p,i} - 1)(C_{p,j} - 1)\,\bigr], \qquad i \neq j
+\end{equation}
+
+第一项来自共用的 $h_t$，第二项来自共用的 $h_s$，两项都是正号——因为静压管读数偏高会让所有孔的
+\Cp 同时偏小，误差同向而不是互相抵消。求 \CD 时必须把这 $28\times28$ 的协方差矩阵带上，
+否则得到的 $u(\CD)$ 只有正确值的一半左右。
+
+\subsection{数值示例}
+
+\begin{table}[H]
+\centering
+\caption{单点 $u(\Cp)$（低速 $B = 18.7$\,mm，高速 $B = 72.4$\,mm；$u = 0.5$\,mm）}
+\small
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+工况 & $\Cp = +1$（驻点） & $\Cp = -2.3$（吸力峰） & $\Cp = 0$ & $u(\CD)$ \\
+\midrule
+低速 15.5 m/s & 0.038 & 0.110 & 0.055 & 0.040 \\
+高速 30.5 m/s & 0.010 & 0.028 & 0.014 & 0.010 \\
+低速、读数误差 1 mm & 0.081 & -- & -- & 0.081 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+1\,mm 那一行是量程估计：如果现场把液柱读到 1\,mm 而不是 0.5\,mm，$u(\CD)$ 直接翻倍到 0.081。
+这就是为什么在低转速下宁可多读几次也不要“估个大概”。
+
+\section{\CD{} 的不确定度}
+
+\subsection{积分权重的来源}
+
+阻力系数按定义积分：$\CD = \int_0^{\pi} \Cp \cos\theta \,\mathrm{d}\theta$。代码里用 \texttt{trapz}
+而不是简单的等间距求和，因为 28 个孔的角度不是等距的：$0$--$20^\circ$ 每 $5^\circ$ 一孔、
+$20$--$120^\circ$ 每 $5$--$10^\circ$、$120$--$180^\circ$ 每 $10$--$15^\circ$ 一孔。
+\texttt{trapz} 给每个孔一个权重 $w_i$，内点是 $(\theta_{i+1} - \theta_{i-1})/2$，端点是一侧间距的一半。
+这些权重既决定 \CD 的值，也决定后面误差传播的系数 $g_i = w_i \cos\theta_i$。
+
+\subsection{闭式解}
+
+设 $s = u/B$，把上节的三项偏导代入 $\CD = \sum g_i C_{p,i}$，并把协方差完整展开，
+交叉项能合并成一个紧凑的形式：
+
+\begin{equation}
+u(\CD) = s\sqrt{\sum_i g_i^2 + \Bigl(\sum_i g_i (C_{p,i} - 1)\Bigr)^2 + \Bigl(\sum_i g_i C_{p,i}\Bigr)^2}
+\end{equation}
+
+三项的物理含义：第一项是每个孔自己的随机误差（互不相关，直接平方和）；第二项是静压管读数的
+共模误差，权重是 $(C_{p,i} - 1)$；第三项是总压管读数的共模误差，权重是 $C_{p,i}$。
+两项共模误差都按“先求和再平方”处理，这正是它们相关、不抵消的数学体现。
+
+\subsection{逐孔实测版本}
+
+当 \texttt{readings.csv} 里每个孔有三条重复读数时，$u$ 不再是统一的 0.5\,mm，而是逐孔一个
+$u_{\text{tap},i}$。此时上式拆成：
+
+\begin{align}
+A &= \frac{1}{B^2}\sum_i g_i^2\Bigl[\,u_{\text{tap},i}^2 + (C_{p,i} u_t)^2 + \bigl((C_{p,i}-1)u_s\bigr)^2\,\Bigr] \\
+B_1 &= \left(\frac{u_t}{B}\right)^2\Bigl[\Bigl(\sum_i g_i C_{p,i}\Bigr)^2 - \sum_i (g_i C_{p,i})^2\Bigr] \\
+B_2 &= \left(\frac{u_s}{B}\right)^2\Bigl[\Bigl(\sum_i g_i (C_{p,i}-1)\Bigr)^2 - \sum_i \bigl(g_i (C_{p,i}-1)\bigr)^2\Bigr] \\
+u(\CD) &= \sqrt{A + B_1 + B_2}
+\end{align}
+
+$B_1$、$B_2$ 里减去的那一项是“每个孔内部”的部分，已经算进 $A$ 了，不减去就重复计数。
+这段代数只在 \texttt{cpUncertainty.m} 里写一遍。
+
+\subsection{两个角度项}
+
+上面两类都没考虑孔的位置。孔位误差分两种，传播规则完全不同，不能合成一个数。
+
+\textbf{逐孔随机项。}每个孔的角度是 $\theta_i + e_i$，$e_i$ 独立、标准差 $u_\theta$。
+把第 $i$ 个孔的角单独挪 $u_\theta$、其余不动，整个 \CD 积分重算一次取中心差分，
+得到该孔对 \CD 的贡献；28 个贡献平方和开根号：
+
+\begin{equation}
+u(\CD)_{\text{taps}} = \sqrt{\sum_i \left[\frac{\CD(\theta + e_i) - \CD(\theta - e_i)}{2}\right]^2}
+\end{equation}
+
+之所以对整个积分求差而不写解析式，是因为挪动一个孔除了改 $C_{p,i} \cos\theta_i$，还同时改了它两侧两个
+梯形块的宽度，解析式要分三段写，很容易漏。demo 数据上这一项得到 0.0088。
+
+\textbf{整圈共模项。}孔 1（$-30^\circ$）与孔 7（$+30^\circ$）是镜像，理应同压。差值 $\Delta C_{p,30}$
+只能解释为整圈相对来流转了 $\Delta\theta$。设 $g$ 为 $30^\circ$ 处的实测斜率，
+则 $\Cp(\mp 30 + \Delta\theta) \approx P \mp g\Delta\theta$，两式相减得 $\Delta C_{p,30} = -2g\Delta\theta$，即
+
+\begin{equation}
+\Delta\theta = -\frac{\Delta C_{p,30}}{2g}, \qquad
+g = \left.\frac{\mathrm{d}\Cp}{\mathrm{d}\theta}\right|_{30^\circ}
+\text{，由 $20^\circ$ 与 $40^\circ$ 两孔中心差分取得}
+\end{equation}
+
+它对 \CD 的影响是把整条曲线平移 $\Delta\theta$ 后的差值
+$|\CD(\theta + \Delta\theta) - \CD(\theta)|$，作为偏差项，不与逐孔项相互抵消。
+demo 数据上 $\Delta\theta = -0.05^\circ$，这一项 0.0022。
+
+\subsection{合成结果}
+
+\begin{table}[H]
+\centering
+\caption{demo 数据的 $u(\CD')$ 分项（保守 0.5\,mm 模型）}
+\small
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+run & $\CD'$ & 读数项 & 逐孔角度项 & 整圈项 & 合成 $u(\CD')$ & 相对 \\
+\midrule
+Smooth 低速 & 1.109 & 0.040 & 0.0088 & 0.0022 & 0.0449 & 4.0\% \\
+Smooth 高速 & 0.925 & 0.010 & 0.0079 & 0.0022 & 0.0127 & 1.4\% \\
+Trip 低速 & 0.465 & 0.022 & 0.0066 & 0.0048 & 0.0236 & 5.1\% \\
+Trip 高速 & 0.597 & 0.007 & 0.0070 & 0.0009 & 0.0098 & 1.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+值得注意：角度项在高速工况下几乎与读数项同量级（0.007 对 0.007），说明高速时 \Cp 读得很准，
+误差瓶颈已经从压力计转移到几何。报告里应当把这一点写出来，它会改变你对该相信哪一组数据的判断。
+
+\section{$\theta$ 的不确定度}
+\label{sec:theta}
+
+\subsection{孔位角 0.29$^\circ$ 的假设}
+
+孔位角误差是加工公差，拿不到重复测量，也拿不到分布形状，只能按“落在 $\pm0.5^\circ$ 内”的矩形分布处理：
+
+\begin{equation}
+u_\theta = \frac{0.5^\circ}{\sqrt{3}} = 0.289^\circ \approx 0.29^\circ
+\end{equation}
+
+这个 $0.5^\circ$ 是按分度头钻孔的常见水平假设的，handout 没有给出实际公差，因此它是本模型里唯一
+一个“凭经验设定”的数。如果助教能给出真实公差 $T$，应把 \texttt{cfg.uTheta} 直接设为 $T/\sqrt{3}$。
+28 个孔共用同一个值：它们出自同一次加工，属于同分布，没有理由逐孔不同。
+
+\subsection{分离角本身的不确定度}
+
+分离点用斜率判据定位：在吸力峰之后找第一个“斜率接近零且之后 $12^\circ$ 内平均值也接近零”的位置。
+这个判据对噪声敏感，其不确定度按“斜率噪声 / 曲率”估计：
+
+\begin{equation}
+u(\theta_{\text{sep}})_{\text{slope}} = \frac{\sigma_{\text{slope}}}{|\mathrm{d}^2 \Cp/\mathrm{d}\theta^2|}
+\end{equation}
+
+并加两个约束：下限取半个孔间距（两个孔之间的位置本来就分辨不出来），上限取 $45^\circ$。
+上限会在分离点靠近 $180^\circ$ 时触发，此时曲线在尾部几乎水平，判据事实上失效。
+demo 数据上四个 run 分别是 $2.5^\circ$、$2.5^\circ$、$19.9^\circ$、$4.0^\circ$；
+第三个值是判据接近失效的直接证据，不应把它当成“分离角测得准”。
+
+\subsection{三项合成}
+
+孔位误差、整圈转角、斜率噪声三者来源独立，平方和：
+
+\begin{equation}
+u(\theta_{\text{sep}}) = \sqrt{u(\theta_{\text{sep}})^2_{\text{slope}} + u_\theta^2 + \Delta\theta^2}
+\end{equation}
+
+实践上 $u_\theta = 0.29^\circ$ 和 $\Delta\theta \approx 0.1^\circ$ 都远小于斜率项，所以数值几乎不变；
+它们的作用是给“数据平滑到判据很硬”的情形留一条底线。
+
+\section{\ReD{} 的不确定度}
+\label{sec:re}
+
+\subsection{传递链与那个 $+0.5$}
+
+取对数微分，$\rho$ 出现两次：一次在 $\rho U d$ 里，一次通过 $U = \sqrt{2q/\rho}$：
+
+\begin{align}
+\mathrm{d}\ln U &= 0.5\,\mathrm{d}\ln q - 0.5\,\mathrm{d}\ln\rho \\
+\mathrm{d}\ln \ReD &= \mathrm{d}\ln\rho + \mathrm{d}\ln U - \mathrm{d}\ln\mu
+= 0.5\,\mathrm{d}\ln\rho + 0.5\,\mathrm{d}\ln q - \mathrm{d}\ln\mu
+\end{align}
+
+所以 $\rho$ 的系数是 $+0.5$，而不是负号。三个输入（$q$、$\rho$、$\mu$）互相独立，平方和：
+
+\begin{equation}
+\frac{u(\ReD)}{\ReD} = \sqrt{\left(0.5\frac{u(q)}{q}\right)^2
++ \left(0.5\frac{u(\rho)}{\rho}\right)^2 + \left(\frac{u(\mu)}{\mu}\right)^2}
+\end{equation}
+
+其中
+$\dfrac{u(q)}{q} = \dfrac{\sqrt{u_s^2 + u_t^2}}{B}$，
+$\dfrac{u(\rho)}{\rho} = \sqrt{\left(\dfrac{u_p}{p}\right)^2 + \left(\dfrac{u_T}{T}\right)^2}$，
+$\dfrac{u(\mu)}{\mu} = \left|\dfrac{1.5}{T} - \dfrac{1}{T+S}\right|u_T$，
+最后一项是 Sutherland 公式对温度的解析灵敏度。
+
+\subsection{修正后的 \ReD{} 多一项}
+
+阻塞修正因子 $V/V' = 1 + 0.25\,\CD'(d/b) + 0.82(d/b)^2$ 依赖 $\CD'$，而 $\CD'$ 自己带不确定度，
+所以修正后的速度与雷诺数还要多一项：
+
+\begin{equation}
+u(V/V') = 0.25\,(d/b)\,u(\CD')
+\end{equation}
+
+\begin{equation}
+\frac{u(\ReD')}{\ReD'} = \sqrt{\left(\frac{u(\ReD)}{\ReD}\right)^2
++ \left(\frac{u(V/V')}{V/V'}\right)^2}
+\end{equation}
+
+demo 上这一项只有 0.22\%（低速）和 0.05\%（高速），因为 $d/b = 0.2217$ 时 $0.25(d/b) \approx 0.055$，
+乘上 $u(\CD') \approx 0.045$ 就很小。留着它是为了让“修正”这件事在不确定度里也有交代。
+
+\subsection{数值}
+
+\begin{table}[H]
+\centering
+\caption{\ReD{} 的不确定度分项（demo，保守 0.5\,mm 模型）}
+\small
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+工况 & $u(q)/q$ & $u(\rho)/\rho$ & $u(\mu)/\mu$ & $u(\ReD')/\ReD'$ & $V/V'$ 项 & $u(\ReD)/\ReD$ \\
+\midrule
+低速 & 3.79\% & 0.113\% & 0.079\% & 1.90\% & 0.221\% & 1.91\% \\
+高速 & 0.98\% & 0.113\% & 0.079\% & 0.50\% & 0.049\% & 0.50\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+$q$ 项除以 2 之后仍然是绝对主项，$\rho$ 与 $\mu$ 加起来不到 0.14\%。结论：想减小 $u(\ReD)$
+只能改液柱读数，测得再准的室温也救不了它。
+
+\section{呈现与报告规则}
+
+\begin{table}[H]
+\centering
+\caption{各类量在图与表里的呈现方式}
+\small
+\begin{tabularx}{\textwidth}{@{}l X l X@{}}
+\toprule
+量 & 图上 & CSV 列 & 报告里怎么引用 \\
+\midrule
+$u(\Cp)$ & \Cp--$\theta$ 图每孔两级棒：$1\sigma$ 实线（带帽）+ $2\sigma$ 细淡线 & \texttt{u\_Cp\_peak} & 取吸力峰那一个值代表该 run 的 \Cp 质量 \\
+$u(\CD')$ & \CD--\ReD{} 图垂直两级棒 & \texttt{u\_CD} & 同时报绝对值与相对值 \\
+$u(\ReD)$ & \CD--\ReD{} 图水平棒（仅 $1\sigma$） & 未写入 & 只在图与正文标百分比，避免再加列 \\
+孔位角 & \Cp--$\theta$ 图水平棒（$\pm u_\theta$） & -- & 口头说明是假设值 \\
+$u(\theta_{\text{sep}})$ & \Cp--$\theta$ 图分离点水平段 & \texttt{u\_thetaSep} & 务必说明判据本身的局限 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+一个原则：图上每个点画两级棒，$1\sigma$ 用实线带帽、$2\sigma$ 用细淡线画在外侧，
+读图的人不必猜这根棒是几个 sigma；报告里若要给 95\% 仍必须写明 $k=2$，
+且不要把图上量出来的长度直接当成 $U_{95}$ 引用（$2\sigma$ 只有 $k=2$ 在正态、
+自由度充足时才等于 $U_{95}$）。
+
+\texttt{results/} 里每张图同时输出 \texttt{.fig} 与 \texttt{.pdf}（矢量）。
+\texttt{.fig} 用于在 MATLAB 里改样式，\texttt{.pdf} 用 \texttt{\textbackslash includegraphics}
+直接插进本报告，不必再转格式；\texttt{cfg.figFormat} 可改成 \texttt{'eps'} 或 \texttt{'png'}。
+
+\section{已知局限}
+
+以下几条是这套计算做不到的事，必须在报告或口试中主动说明，而不是等对方问。
+
+\begin{table}[H]
+\centering
+\caption{局限及其对结论的影响}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.2cm} X X@{}}
+\toprule
+局限 & 影响 & 建议表述 \\
+\midrule
+阻塞比 22.2\%，Roshko 校准到 13.6\%，外推 1.63 倍 &
+修正公式的适用性本身可疑，修正量 10\% 里可能有几个百分点是外推误差 &
+把阻塞修正的结果与未修正结果并列给出，而不是只报修正值 \\
+孔位公差 $0.5^\circ$ 是假设 &
+$u(\CD)$ 的角度项可能被高估或低估一倍 &
+写明“按 $\pm0.5^\circ$ 假设”，并给出公差为 $0.1^\circ$ 时的对应值 \\
+$\pm30$ 差值只能折成一个等效转角 &
+真实非对称（孔深、圆柱不垂直）被并入 $\Delta\theta$ &
+称其为“等效转角”，不要称为“对中误差” \\
+分离判据在尾部失效 &
+tripped 低速的 $u(\theta_{\text{sep}})$ 达 $19.9^\circ$（实测模型下 $45^\circ$） &
+同时报吸力峰角度，说明后者不依赖判据 \\
+各 run 之间未做相关性处理 &
+同一台压力计、同一批孔，run 之间的误差部分共模 &
+不做跨 run 的加权平均，只做并列比较 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{代码映射}
+
+口试被问到“这个数哪来的”时，按下表答即可。行号以当前版本为准。
+
+\begin{table}[H]
+\centering
+\caption{每个输出量对应的代码位置}
+\small
+\begin{tabularx}{\textwidth}{@{}p{5.0cm} p{4.6cm} X@{}}
+\toprule
+输出量 & 所在文件 & 实现要点 \\
+\midrule
+\texttt{cfg.uRead / uScale / uTheta / uTair / uPbaro} & \texttt{cylinder\_lab.m} 第 68--78 行 &
+全部假设集中在此，改一处即可 \\
+$u(\Cp)$、$u(\CD')$、$u(\theta_{\text{sep}})_{\text{slope}}$ & \texttt{cpUncertainty.m} &
+含协方差矩阵，只在此处推导 \\
+$\Delta\theta$ 与 $u(\CD)_{\text{taps}}$ & \texttt{runUncertainty.m} 87--108 行 &
+逐孔中心差分 + 整圈平移 \\
+$u(\ReD)$ 链 & \texttt{runUncertainty.m} 60--80 行 &
+$q \to U \to \ReD$，含 $\rho$、$\mu$、$V/V'$ 项 \\
+$\pm30$ 反推 $\Delta\theta$ & \texttt{cylinder\_lab.m} 第 289--304 行 &
+$\Delta C_{p,30}$ 与 $20^\circ/40^\circ$ 中心差分斜率 \\
+图上的棒长 & \texttt{sigmaCp / sigmaCD / thetaBar / separationBar} & 优先实测，缺失退回保守值 \\
+CSV 的 \texttt{u\_} 列 & \texttt{writeCsv} & 29 列，只写 \texttt{cpUncertainty} 的返回量 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{口试问答要点}
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt]
+\item \textbf{为什么 \Cp 只写成读数之差的比例？}\\
+因为 $\rho_e$、$g$、刻度零点、接管方向都在比值里约掉，唯一有意义的是差值之比。符号约定不影响结果，
+但“哪根是总压管”必须现场判定。
+
+\item \textbf{为什么 $u(\Cp)$ 在吸力峰处更大？}\\
+偏导 $\partial \Cp/\partial h_s = (\Cp - 1)/B$，吸力峰 $\Cp \approx -2.3$ 时这个系数是三倍多；
+静压管的误差被放大。
+
+\item \textbf{为什么求 \CD{} 时不能把各孔的 $u(\Cp)$ 简单平方和？}\\
+各孔共用 $h_s$ 与 $h_t$，协方差非零且为正，简单平方和会把 $u(\CD)$ 算小约一半。
+
+\item \textbf{为什么用 \texttt{trapz} 而不是等间距求和？}\\
+28 个孔的角度不均匀（$5^\circ/10^\circ/15^\circ$ 混合），等间距求和会给疏区过高的权重。
+
+\item \textbf{孔位误差为什么要分两类？}\\
+逐孔独立项在 28 个孔上按平方和摊薄；整圈转角是共模，孔再多也不摊薄，只能线性进入。
+
+\item \textbf{$\pm30$ 差值怎么变成角度？}\\
+对称性要求两点同压，差值来自整圈旋转；$\Cp(\mp30 + \Delta\theta) \approx P \mp g\Delta\theta$，
+相减得 $\Delta C_{p,30} = -2g\Delta\theta$。
+
+\item \textbf{为什么 $g$ 用实测而不用势流 $-4\sin 2\theta$？}\\
+边界层把 $30^\circ$ 附近的 \Cp 压平，实测斜率约为理论值的 70\%，用理论值会把 $\Delta\theta$ 系统性算小。
+
+\item \textbf{$u(\ReD)$ 里 $\rho$ 的系数为什么是 $+0.5$？}\\
+$\rho$ 一次在 $\rho U d$ 里、一次通过 $U = \sqrt{2q/\rho}$，两者相加得 $+1 - 0.5 = +0.5$。
+
+\item \textbf{$u(\CD)$ 里 0.5\,mm 和 1\,mm 差多少？}\\
+线性关系：1\,mm 时 $u(\CD)$ 从 0.040 变成 0.081，翻一倍。读数精度直接决定整个结论的可信度。
+
+\item \textbf{分离角的 19.9$^\circ$ 是数据差还是判据差？}\\
+判据差。尾部曲线接近水平，斜率阈值在噪声量级，判据事实上失效；应同时报吸力峰角度。
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,359 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titleformat{\section}{\large\bfseries\color{black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{black}}{\thesubsection}{0.6em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\linespread{1.2}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{2em}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Cylinder Lab --- Operation Sheet}\\[3pt]
+{\small What to do at the rig, in order \quad\textbar\quad RODH 115 (ex L50)
+\quad\textbar\quad $d = 102$\,mm, $b = 460$\,mm, 28 tappings}\\[3pt]
+{\footnotesize Monday 16 November 2026 \quad\textbar\quad Engineering Practice 2 -- Aerodynamics 2}
+\end{center}
+
+\vspace{2pt}
+
+\section{Before you leave}
+
+\begin{table}[H]
+\centering
+\caption{Kit and preparation}
+\small
+\begin{tabularx}{\textwidth}{@{}p{5.6cm} X c@{}}
+\toprule
+item & why & done \\
+\midrule
+prelab, printed or on the iPad & the supervisor may ask for the run matrix & $\square$ \\
+\texttt{readings.csv} template on the laptop & 14 columns, 150 rows & $\square$ \\
+\texttt{cylinder\_lab.m}, \texttt{cpUncertainty.m}, \texttt{runUncertainty.m} & all three in one folder &
+$\square$ \\
+MATLAB launched once at home (\texttt{cfg.demo = true}) & first start takes 40--60 s & $\square$ \\
+Immutalog open, one notebook for this lab & an exported PDF cannot be edited & $\square$ \\
+pen and a paper backup sheet & readings must survive a dead laptop & $\square$ \\
+phone or calculator for the $\pm30$ check & one subtraction, one comparison & $\square$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Arrive, safety, switch-on}
+
+The room door stays open whenever the tunnel is running --- a hard rule, not a preference. Nobody
+reaches into the working section while the fan spins, and the fan comes to zero before anything is
+mounted or touched.
+
+Order: door open, fan to minimum, let it settle, level the board. Confirm all 28 tapping tubes plus
+the two Pitot tubes are connected and none is pinched --- a single loose tube later appears as one
+absurd \Cp{} and is easily mistaken for separation.
+
+Record ambient temperature and barometric pressure before the first run, three readings each.
+
+\section{Alignment using holes 1 and 7}
+
+Holes 1 ($-30^\circ$) and 7 ($+30^\circ$) are mirrors about hole 2, so a correctly aligned cylinder
+must give them the same reading. It is the only alignment check available, and a one-degree error
+changes \CD{} by about 2\,\% --- the same size as the uncertainty you are reporting.
+
+Procedure: run at the low-speed setting, read holes 1, 2 and 7 three times each, rotate by the
+smallest increment the mount allows, repeat. Lock the position minimising $|h_1 - h_7|$.
+
+Criterion, derived rather than guessed: with $B \approx 18.7$\,mm at low speed,
+\begin{equation}
+\Delta C_{p,30} = 2 g \Delta\theta \approx 2 \times 0.043 \times 1^\circ = 0.086
+\quad\Rightarrow\quad |h_1 - h_7| \approx 0.086 \times 18.7 \approx 1.6\ \text{mm}
+\end{equation}
+so keeping the pair within about 1.5\,mm corresponds to less than one degree, the level the script
+flags (\texttt{cfg.alignWarn = 1.0}). At high speed the same angular error gives four times the
+column difference, so re-check once after raising the speed.
+
+\section{Which Pitot tube is which}
+
+The handout does not fix which of tubes 35 and 36 is static. Do not guess from the tube number,
+and do not guess from the sign of the column --- decide physically. Hole 2 sits at $\theta = 0$,
+so its surface pressure equals total pressure; the Pitot tube whose reading matches
+$h(\text{hole } 2)$ is the total one.
+
+At low speed read hole 2, then tubes 35 and 36. The tube within a fraction of a millimetre of hole 2
+is total. The script repeats this test per run and prints a stagnation check line, so a flip between
+runs shows up in the output --- that is a real fault, not a numerical curiosity.
+
+\section{Run matrix}
+
+Four runs are required, a fifth repeat is optional. Take the rpm values from Table 2 of the prelab.
+
+\begin{table}[H]
+\centering
+\caption{Runs to record}
+\small
+\begin{tabular}{@{}c p{3.6cm} c c c p{5.0cm}@{}}
+\toprule
+run & boundary layer & $U_\infty$ & $q$ & column & purpose \\
+\midrule
+1 & smooth (natural) & 15.5 m/s & 145 Pa & 18.7 mm & attached, subcritical reference \\
+2 & smooth (natural) & 30.5 m/s & 560 Pa & 72.4 mm & attached, higher \ReD \\
+3 & tripped & 15.5 m/s & 145 Pa & 18.7 mm & post-critical drag drop \\
+4 & tripped & 30.5 m/s & 560 Pa & 72.4 mm & post-critical, higher \ReD \\
+5 (opt.) & as run 3 & 15.5 m/s & 145 Pa & 18.7 mm & repeat for a type A estimate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Record the trip configuration in the logbook: type, position, method of attachment. Without it the
+tripped runs cannot be compared with anyone else's, including your own next week.
+
+\section{Reading routine per run}
+
+One run is one pass over 28 tappings plus the two Pitot tubes. Keep the order identical every time
+so a mistake appears as a shift rather than as noise.
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+\item Wait for the speed to settle; check it has not drifted before starting and after finishing.
+\item Read tubes 35 and 36 first, three repeats each. Everything downstream is scaled by this
+difference, so it deserves the most care, not the least.
+\item Read holes 1 to 28 in order, three repeats each. If a column oscillates, wait rather than
+average a transient.
+\item Read hole 2 again at the end. More than about 0.3\,mm between first and last reading means the
+speed drifted during the pass; repeat the run.
+\item Write the three repeats into the three adjacent columns of \texttt{readings.csv} while standing
+at the rig. Do not carry numbers in your head to the laptop.
+\end{enumerate}
+
+Three repeats is the minimum that produces a type A term at all. A single reading forces the script
+back to the conservative 0.5\,mm assumption and roughly triples the reported $u(\CD)$.
+
+\section{Checks before leaving the rig}
+
+All four take about five minutes with the tunnel still running. Each catches a failure that would
+otherwise surface only in the analysis, when the rig is gone.
+
+\begin{table}[H]
+\centering
+\caption{In-situ checks}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm} X p{6.2cm}@{}}
+\toprule
+check & criterion & if it fails \\
+\midrule
+stagnation & $|h(\text{hole 2}) - h(\text{total})| \leq 0.3$\,mm & tubes swapped or leaking: re-identify, re-read \\
+$\pm30$ symmetry & $|h_1 - h_7| \leq 1.5$\,mm at low speed & rotate the model, re-lock, redo the run \\
+static drift & $|h(\text{hole 2})_{\text{start}} - h(\text{hole 2})_{\text{end}}| \leq 0.3$\,mm &
+speed drifted: repeat the run \\
+range & no column pinned at top or bottom & speed too high, or an air bubble: bleed the tube \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+If a run must be repeated, repeat it completely. Mixing half of one pass with half of another is the
+most common way to produce a distribution that looks almost right.
+
+\section{On the laptop, straight after the session}
+
+Fill the wide template: one row per tapping, hole number in the \texttt{hole} column, the three
+repeats in \texttt{r\_1}, \texttt{r\_2}, \texttt{r\_3}. Temperature and pressure occupy their own
+three columns on the first row of each run; leaving them blank makes the script fall back to
+21.0\,$^\circ$C and 101\,300\,Pa, which is not the same as writing the real values.
+
+Set \texttt{cfg.demo = false} and \texttt{cfg.dataFile = 'readings.csv'}, then run the script.
+
+\begin{table}[H]
+\centering
+\caption{What to look at in the console}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.4cm} p{4.2cm} X@{}}
+\toprule
+output & expected & meaning when outside the range \\
+\midrule
+stagnation check & within $\pm0.3$\,mm & tube identification wrong, or a leak \\
+\texttt{dCp30} / ring rotation & $|\Delta\theta| < 1^\circ$ & model still misaligned; separation angle suspect \\
+$u(\ReD')/\ReD'$ & 1--2\,\% low, 0.5\,\% high & far larger means the column was read to 1\,mm \\
+$u(\CD')$ & 0.01--0.05, i.e.\ 1--5\,\% & a jump of 2--3$\times$ means repeats were not independent \\
+$u(\theta_{\text{sep}})$ & 2--5$^\circ$ for attached runs & 20$^\circ$ or more: criterion failed, quote the peak angle \\
+eq(2) versus integrated \CD & within about 10\,\% & a larger gap points at a bad tapping \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Save the figures and the CSV, and export the logbook the same evening. The deadline is 23:00 the day
+after the lab; an exported notebook can no longer be edited.
+
+\section{What to record, and where it goes in the code}
+
+The table below joins the two halves of the session: what you write at the rig, and what the script
+reads afterwards. Column names are the ones in \texttt{readings.csv} and \textbf{must not be
+changed} --- the file is read with \texttt{VariableNamingRule}, so a renamed column disappears.
+
+\begin{table}[H]
+\centering
+\caption{Rig record $\rightarrow$ column of \texttt{readings.csv}}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.0cm} p{3.6cm} p{2.5cm} X@{}}
+\toprule
+item & column & how to write & note \\
+\midrule
+run number & \texttt{run} & 1--5 & all 30 rows of a run (28 holes + 2 tubes) share it \\
+boundary layer & \texttt{tripped} & 0 or 1 & 0 smooth, 1 tripped; label only, no arithmetic \\
+rpm & \texttt{rpm} & integer & a record, not an input: speed comes from the Pitot difference \\
+scale division & \texttt{scale\_mm} & e.g.\ 1.0 & mm per division, sets $u_B=(s/2)/\sqrt{3}$; one row per run is enough \\
+air temperature & \texttt{Tair\_C\_1..3} & 21.0 / 21.1 / 20.9 & three readings; one is also accepted \\
+barometric pressure & \texttt{pBaro\_Pa\_1..3} & 101300 & three readings, in Pa, \textbf{not hPa} \\
+hole & \texttt{hole} & 1--28 / 35 / 36 & 35 and 36 are the Pitot tubes; do not write 29, 30 \\
+reading & \texttt{r\_1}, \texttt{r\_2}, \texttt{r\_3} & mm & the repeats; leave unread ones blank \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{\texttt{cfg} fields to check before the run}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm} p{2.7cm} X@{}}
+\toprule
+field & default & when to change it \\
+\midrule
+\texttt{cfg.demo} & \texttt{true} & must be \texttt{false} in the lab, or the script reads synthetic data \\
+\texttt{cfg.dataFile} & \texttt{'readings.csv'} & only if the file is renamed \\
+\texttt{cfg.units} & \texttt{'mm'} & \texttt{'m'} only if the board is graduated in metres \\
+\texttt{cfg.uRead} & 0.5 & applies only where a tapping has one reading; normally leave it \\
+\texttt{cfg.uScale} & 1.0 & if the division is not 1\,mm and \texttt{scale\_mm} is blank \\
+\texttt{cfg.uTheta} & 0.29 & only if the machining tolerance changes ($0.5^\circ/\sqrt{3}$) \\
+\texttt{cfg.uTair}, \texttt{cfg.uPbaro} & 0.3, 50 & only if the thermometer or barometer changes \\
+\texttt{cfg.alignWarn} & 1.0 & the alignment warning, in degrees; pairs with the 1.5\,mm criterion \\
+\texttt{cfg.thetaSepManual} & \texttt{[]} & per-run override, e.g.\ \texttt{[80 88 NaN 124]}; \texttt{NaN} keeps the automatic value \\
+\texttt{cfg.sepUncK} & 2 & 2 for a 95\,\% figure, 1 for a bare $1\sigma$ \\
+\texttt{cfg.figFormat} & \texttt{'pdf'} & \texttt{'png'} only if a raster is wanted \\
+\texttt{cfg.uSigma} & \texttt{[1 2]} & add 3 for a three-level bar \\
+\texttt{cfg.pitotOrder} & \texttt{'auto'} & force \texttt{'tube35static'} / \texttt{'tube36static'} if the auto test disagrees with your observation \\
+\texttt{cfg.TairDefault} & 21.0 & used when the temperature column is blank --- \textbf{set it to the real value} \\
+\texttt{cfg.pBaroDefault} & 101300 & same, in Pa \\
+\texttt{cfg.nFine} & 0.25 & refined integration grid in degrees; leave it \\
+\texttt{cfg.outDir} & \texttt{results} & output directory \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The physical constants (\texttt{dia}, \texttt{tunnelB}, \texttt{rhoEth}, \texttt{g}, \texttt{Rair},
+\texttt{mu0}, \texttt{T0}, \texttt{Suth}) come from the handout and must not be touched; the same
+holds for the array of tapping angles.
+
+\begin{table}[H]
+\centering
+\caption{What a blank or a missing row falls back to}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.4cm} p{4.2cm} X@{}}
+\toprule
+situation & consequence & say this in the report \\
+\midrule
+all \texttt{Tair\_C\_*} blank & \texttt{TairDefault} = 21.0\,$^\circ$C is used & $\rho$ rests on a default temperature; state it \\
+all \texttt{pBaro\_Pa\_*} blank & \texttt{pBaroDefault} (101300\,Pa) is used & same \\
+\texttt{scale\_mm} blank & \texttt{cfg.uScale} = 1.0\,mm is used & $u_B$ becomes 0.289\,mm \\
+one repeat only & that point falls back to 0.5\,mm; no type A term & $u(\CD)$ roughly triples \\
+a tapping with no reading & the run prints \texttt{[skip]} and is dropped & fill it in and re-run; never use 0 as a placeholder \\
+35 or 36 missing & the run prints \texttt{[skip]} & same \\
+a whole row missing & same & same \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+One sentence: \textbf{the CSV carries the data, \texttt{cfg} carries the model}. Readings go into the
+CSV, constants and thresholds into \texttt{cfg}, and the two should not fight each other. The result
+CSV has 29 columns, but only seven numbers belong in the logbook: $\CD'$, $\CD$ from eq.(2),
+$\CD$ from the integral, $V/V'$, $\theta_{\text{sep}}$, \ReD{}', plus $u(\CD')$,
+$u(\theta_{\text{sep}})$ and $\Delta\theta$.
+
+\section{Troubleshooting}
+
+\begin{table}[H]
+\centering
+\caption{Common failures}
+\small
+\begin{tabularx}{\textwidth}{@{}p{5.2cm} X p{5.4cm}@{}}
+\toprule
+symptom & most likely cause & action \\
+\midrule
+one \Cp{} far outside its neighbours & air bubble or kinked tube & bleed and re-read that tapping only \\
+all \Cp{} shifted the same way & static tube wrong, or board re-levelled mid-run & re-zero, repeat the pass \\
+\Cp{} at hole 2 below the total tube & hole 2 is not at stagnation & check alignment, re-identify the tubes \\
+separation near $180^\circ$ on a tripped run & criterion found no flat region &
+expected at high blockage; report the peak angle and say so \\
+\ReD{} outside $10^5$--$10^6$ & speed not what the rpm column claims & re-read the dynamic head, correct the entry \\
+script stops with a missing-module note & one uncertainty file absent & copy both files next to
+\texttt{cylinder\_lab.m}; the run still completes without them \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Timing}
+
+\begin{table}[H]
+\centering
+\caption{Realistic budget for a two-hour session}
+\small
+\begin{tabularx}{\textwidth}{@{}X c p{7.4cm}@{}}
+\toprule
+block & minutes & note \\
+\midrule
+safety, switch-on, levelling & 10 & door open, fan at minimum \\
+alignment with holes 1 and 7 & 15 & iterate until $|h_1 - h_7| \leq 1.5$\,mm \\
+Pitot identification & 5 & hole 2 versus 35 and 36 \\
+run 1 (smooth, low) & 12 & 30 readings, three repeats each \\
+run 2 (smooth, high) & 12 & same pass, higher speed \\
+fit or remove the trip & 10 & record type and position \\
+run 3 (tripped, low) & 12 & expect a visibly different plateau \\
+run 4 (tripped, high) & 12 & same \\
+optional run 5 & 12 & repeat of run 3 \\
+final checks and pack down & 10 & four checks, fan to zero, tubes off \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{One-page checklist}
+
+\begin{table}[H]
+\centering
+\caption{Sequence at the rig}
+\small
+\begin{tabularx}{\textwidth}{@{}c X p{5.0cm} c@{}}
+\toprule
+\# & step & done when & $\checkmark$ \\
+\midrule
+1 & door open, fan at minimum, board levelled & all 30 tubes connected, none pinched & $\square$ \\
+2 & $T$ and $p$ recorded, three repeats each & values in the first row of the run & $\square$ \\
+3 & model aligned using holes 1 and 7 & $|h_1 - h_7| \leq 1.5$\,mm at low speed & $\square$ \\
+4 & Pitot tubes identified & $|h(\text{hole 2}) - h(\text{total})| \leq 0.3$\,mm & $\square$ \\
+5 & run 1, smooth low & hole 2 start and end within 0.3\,mm & $\square$ \\
+6 & run 2, smooth high & same & $\square$ \\
+7 & trip fitted, configuration written & logbook entry complete & $\square$ \\
+8 & run 3, tripped low & plateau visible in the tail & $\square$ \\
+9 & run 4, tripped high & same & $\square$ \\
+10 & optional run 5 & repeat of run 3 & $\square$ \\
+11 & four in-situ checks & all four pass & $\square$ \\
+12 & pack down & fan to zero, tubes off, section clear & $\square$ \\
+13 & \texttt{readings.csv} filled, script run & no warnings in the console & $\square$ \\
+14 & figures and CSV saved, logbook exported & PDF before 23:00 the next day & $\square$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}

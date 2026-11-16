@@ -1,0 +1,122 @@
+\documentclass[9pt,a4paper]{extarticle}
+\usepackage[margin=1.3cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+\titleformat{\section}{\normalsize\bfseries}{}{0em}{}[\vspace{-6pt}]
+\titlespacing*{\section}{0pt}{4pt}{1pt}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\linespread{0.98}
+\renewcommand{\arraystretch}{1.02}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\pagestyle{empty}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\CL}{\ensuremath{C_L}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+\newcommand{\blank}{\rule{1.5cm}{0.4pt}}
+
+\begin{document}
+
+{\large\bfseries Circular Cylinder --- Pre-lab Record}\hfill
+{\small Engineering Practice 2 -- Aerodynamics 2 \quad RODH 115 (ex L50)}\\[1pt]
+{\small Date \blank \qquad Group \blank \qquad Names \blank}
+
+\section*{1 \ Objective}
+Measure $\Cp(\theta)$ on 28 surface tappings at two speeds, with and without a trip wire;
+integrate to get uncorrected $\CD'$, correct for blockage, and compare the integrated
+$\CD{}_{\text{int}}$ against Roshko eq.~(2) $\CD{}_{\text{eq2}}$. Second aim: show that at the
+same $\ReD$ the boundary-layer state alone moves separation from $\approx85^\circ$ to
+$\approx130^\circ$ and $\CD$ from $\approx1.2$ to $\approx0.5$.
+
+\section*{2 \ Apparatus (numbers to have at hand)}
+$d = 102$\,mm, $b = 460$\,mm, $r = d/b = 0.2217$ (22\,\% blockage), 28 tappings + Pitot on
+tubes 35/36, ethanol $\rho_e = 789$\,kg\,m$^{-3}$, manometer scale \blank\,mm/div,
+engine settings 700 rpm ($U'\approx15.5$\,m/s, $\ReD'\approx1.0\times10^{5}$) and
+1350 rpm ($U'\approx30.5$\,m/s, $\ReD'\approx2.1\times10^{5}$).
+Hole 2 = $0^\circ$ (stagnation), holes 1 and 7 = $\pm30^\circ$ (mirror pair).
+\par\vspace{3pt}
+\noindent\fbox{\begin{minipage}[c][2.2cm][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+\centering\small Sketch: tapping ring --- mark $0^\circ$, $\pm30^\circ$, $90^\circ$, $180^\circ$, and the wire position
+\end{minipage}}
+
+\section*{3 \ Procedure outline}
+\begin{enumerate}[leftmargin=1.3em,itemsep=0pt,topsep=1pt]
+\item Zero the manometer; check no bubbles; all tubes connected and numbered.
+\item Read $T$ three times and $p_{\text{baro}}$ three times; note scale \blank\,mm/div.
+\item Identify Pitot: the tube whose column matches hole 2 is \emph{total}; check
+$q=\rho_e g B$ against $\tfrac12\rho U^2$ ($\approx146$\,Pa at 700, $\approx560$\,Pa at 1350).
+\item Alignment: $\Cp(+30^\circ)$ vs $\Cp(-30^\circ)$. Benchmark $|\Delta\Cp{}_{30}|<0.01$
+($\approx0.1^\circ$; the code only warns above $1.0^\circ$); if $0.01$--$0.12$, record it and
+carry it into the $\theta$ error bar rather than repeating.
+\item Run 1: 700 rpm, no wire. Settle; then \textbf{read all 30 columns in one pass,
+three readings per tapping}.
+\item Run 2: 1350 rpm, no wire. Same reading discipline.
+\item Fit wire at \blank\,deg from stagnation (target 60--75$^\circ$); note its diameter.
+\item Run 3: 700 rpm, tripped. \quad \item Run 4: 1350 rpm, tripped.
+\item Optional run 5 if a third speed is offered.
+\item Note anomalies per run (bubble, leak, drifting zero); keep raw heights only.
+\end{enumerate}
+
+\section*{4 \ Reduction, in this order}
+\begin{enumerate}[leftmargin=1.3em,itemsep=0pt,topsep=1pt]
+\item $\Cp = (h_i-h_s)/(h_t-h_s)$ --- $\rho$, $g$ cancel; it is a pure height ratio,
+so $u(\Cp)=u(h)/B$.
+\item $\CD' = \int_0^{\pi}\Cp\cos\theta\,\mathrm{d}\theta$;
+$\ensuremath{C_{L,\text{asym}}}\approx \Delta\Cp{}_{30}/2$. Trapezoid on the actual tap spacing.
+\item $V/V' = 1 + \tfrac14\CD' r + 0.82 r^2$ \quad (needs $\CD'$ first).
+\item $\Cp^{\text{corr}} = 1 + (\Cp-1)/(V/V')^2$, then integrate again $\Rightarrow \CD{}_{\text{int}}$.
+\item $\CD{}_{\text{eq2}} = (1-\tfrac12\CD' r - 2.5 r^2)\CD'$ (direct, eq.~2).
+\item $\ReD' = \rho U' d/\mu$, $U_{\text{corr}} = U'(V/V')$; separation = angle where the
+recovery ends and the plateau starts.
+\end{enumerate}
+$\CD{}_{\text{int}}$ and $\CD{}_{\text{eq2}}$ differ by 7--9\,\%: expected, not an error to hide.
+
+\section*{5 \ Uncertainty plan}
+Dominant term is one column reading divided by $B$: $u(\Cp)\approx0.027$ at the low speed
+(1.9\,\%) and $0.007$ at the high speed (0.5\,\%) --- hence the high-speed runs are preferred
+for quoted numbers. Tap angle tolerance $0.5^\circ/\sqrt3 = 0.29^\circ$; ring rotation from
+the $\pm30^\circ$ pair (coherent over all taps). Separation angle carries $2.5^\circ$ when
+the knee is sharp and $\pm20^\circ$ when the 12$^\circ$ slope window bottoms out on noise;
+say which regime the run is in. Temperature and pressure enter only $\rho$ and $\mu$
+(type B); they do not affect $\Cp$, which is a height ratio.
+
+\section*{6 \ What I will record}
+One row per tapping: \texttt{run, tripped, rpm, scale\_mm, Tair\_C\_1..3, pBaro\_Pa\_1..3,
+hole, r\_1, r\_2, r\_3}. Then per run, for the logbook:
+$\CD'$, $\CD{}_{\text{eq2}}$, $\CD{}_{\text{int}}$, $V/V'$, $\theta_{\text{sep}}$, $\ReD'$,
+$u(\CD')$, $u(\theta_{\text{sep}})$, $\Delta\theta_{\text{ring}}$.
+
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+Run & Wire & rpm & Purpose & Expected $\CD'$ \\
+\midrule
+1 & none & 700 & laminar baseline & $\approx1.1$ \\
+2 & none & 1350 & same state, 4$\times$ $q$ & $\approx0.93$ \\
+3 & fitted & 700 & tripped, low speed & $\approx0.46$ \\
+4 & fitted & 1350 & tripped, high speed & $\approx0.60$ \\
+5 & fitted & 1000 & mid-$Re$ tripped point & $\approx0.53$ \\
+\bottomrule
+\end{tabularx}
+
+\section*{7 \ Questions I expect (and where I will check them)}
+1 Vary $\ReD$ how, why, which speed more reliable (higher: $q\propto U^2$).
+2 Best wire position (upstream of separation, 60--75$^\circ$).
+3 Why separation differs at equal $\ReD$ (boundary-layer state).
+4 Effect on drag (base pressure up, form drag down).
+5 Equivalent $\ReD$ of the tripped runs ($\approx10^{6}$).
+6 Two cases where tripping helps (golf ball; blade trip strip at low $\ReD$).
+7 Blockage effect on $\Cp$ and $\CD$ (over-strong suction, high $\CD$).
+8 Other error sources (reading, leaks, drift, shedding, 3D ends, tap count).
+9 \textbf{Which Pitot is static --- verify at the bench by matching hole 2.}
+10 Speed for a natural turbulent layer on a smooth cylinder ($\approx30$--$50$\,m/s, beyond
+this tunnel). 11 Other surface features (roughness, dimples, trip dots, seams).
+
+\end{document}

@@ -1,0 +1,346 @@
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+\ctexset{
+  section/format = \Large\heiti\color{black},
+  section/aftername = \quad,
+  subsection/format = \large\heiti\color{black},
+  subsection/aftername = \quad,
+}
+
+\setlength{\parindent}{2em}
+\setlength{\parskip}{4pt}
+\linespread{1.3}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{4em}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\heiti 圆柱绕流实验：现场操作流程}\\[4pt]
+{\small 站在风洞边上该做什么、按什么顺序做\quad\textbar\quad RODH 115（原 L50）\quad\textbar\quad
+$d = 102$\,mm，$b = 460$\,mm，28 个测压孔}\\[4pt]
+{\footnotesize 2026 年 11 月 16 日 星期一\quad\textbar\quad
+Engineering Practice 2 -- Aerodynamics 2\quad\textbar\quad 本件为中文版，与英文版逐节对应}
+\end{center}
+
+\vspace{2pt}
+
+\section{出发前}
+
+\begin{table}[H]
+\centering
+\caption{器材与准备}
+\small
+\begin{tabularx}{\textwidth}{@{}p{6.1cm} X c@{}}
+\toprule
+项目 & 为什么带 & 已办 \\
+\midrule
+prelab（打印或存 iPad） & 导师可能要看你的 run 矩阵 & $\square$ \\
+笔记本里的 \texttt{readings.csv} 模板 & 14 列，150 行 & $\square$ \\
+\texttt{cylinder\_lab.m}、\texttt{cpUncertainty.m}、\texttt{runUncertainty.m} & 三个文件放同一个文件夹 &
+$\square$ \\
+在家先启动一次 MATLAB（\texttt{cfg.demo = true}） & 首次启动要 40--60 秒 & $\square$ \\
+Immutalog 已开，本实验单独一本 & 导出的 PDF 不能再编辑 & $\square$ \\
+笔和一张纸质备份表 & 笔记本死机时读数还得活着 & $\square$ \\
+手机或计算器（算 $\pm30$ 差值） & 一次减法、一次比较 & $\square$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{到场、安全、开机}
+
+风洞一旦转起来，房间门必须开着——这是硬规定，不是偏好。风扇转着的时候任何人不许伸手进工作段；
+要装东西、要碰模型，先把风扇降到零。
+
+顺序：开门、风扇降到最小、等它稳、把板子调水平。确认 28 根测压孔管加两根 Pitot 管全部接上、
+没有一根被压折——一根松管事后会表现为某一个荒诞的 \Cp{}，很容易被误当成"这里分离了"。
+
+第一次 run 之前记环境温度和大气压，各读三次。
+
+\section{用 1 号和 7 号孔对中}
+
+孔 1（$-30^\circ$）与孔 7（$+30^\circ$）关于孔 2 对称，圆柱对中正确时这两个孔的读数应当相同。
+这是唯一可用的对中检查；一度角误差会让 \CD{} 变约 2\,\%——正好和你报的不确定度同量级。
+
+做法：低速档运行，孔 1、2、7 各读三次，按支座能给的最小角度步进旋转，重复。
+把 $|h_1 - h_7|$ 最小的那个位置锁死。
+
+判据是算出来的，不是估的：低速时 $B \approx 18.7$\,mm，
+\begin{equation}
+\Delta C_{p,30} = 2 g \Delta\theta \approx 2 \times 0.043 \times 1^\circ = 0.086
+\;\Rightarrow\; |h_1 - h_7| \approx 0.086 \times 18.7 \approx 1.6\ \text{mm}
+\end{equation}
+所以这一对读数控制在 1.5\,mm 以内，就对应不到一度的角误差，也就是脚本报警的阈值
+（\texttt{cfg.alignWarn} $=$ \texttt{1.0}）。同样的角误差在高速下液柱差是低速的四倍，提速之后要再查一次。
+
+\section{判定哪根 Pitot 管是哪根}
+
+handout 没有规定 35、36 哪根是静压。不要按管号猜，也不要按液柱正负猜——用物理判据定。
+孔 2 在 $\theta = 0$，其表面压力就是总压；读数和 $h(\text{孔 }2)$ 相等的那根 Pitot 管就是总压管。
+
+低速下先读孔 2，再读 35 和 36。与孔 2 相差不到零点几毫米的那根是总压管。
+脚本每个 run 都重做一次这个检验并打印 stagnation check 一行，所以两次 run 之间若两管"对调"，
+输出里会直接看出来——那是真故障，不是数值巧合。
+
+\section{Run 矩阵}
+
+四次 run 是硬要求，第五次重复可选。转速取 prelab 表 2 的值。
+
+\begin{table}[H]
+\centering
+\caption{要记录的 run}
+\small
+\begin{tabular}{@{}c p{3.6cm} c c c p{5.0cm}@{}}
+\toprule
+run & 边界层 & $U_\infty$ & $q$ & 液柱 & 用途 \\
+\midrule
+1 & 光滑（自然） & 15.5 m/s & 145 Pa & 18.7 mm & 附着，亚临界参考 \\
+2 & 光滑（自然） & 30.5 m/s & 560 Pa & 72.4 mm & 附着，更高 \ReD \\
+3 & 加扰流 & 15.5 m/s & 145 Pa & 18.7 mm & 后临界，阻力跌落 \\
+4 & 加扰流 & 30.5 m/s & 560 Pa & 72.4 mm & 后临界，更高 \ReD \\
+5（可选） & 同 run 3 & 15.5 m/s & 145 Pa & 18.7 mm & 重复一次，用于 A 类估计 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+扰流配置必须写进 logbook：类型、位置、粘接方式。不写下来，加扰流的 run 就没法和别人的比较，
+也没法和你自己下周的比较。
+
+\section{单个 run 的读数流程}
+
+一次 run 就是"过一遍 28 个孔 + 两根 Pitot 管"。顺序每次都保持完全一致，这样出错会表现为整体平移，
+而不是随机噪声。
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+\item 等风速稳定；开始前查一次有没有漂，结束前再查一次。
+\item 先读 35、36 两管，各重复三次。下游所有量都由这个差值定标，所以最该用心的就是它。
+\item 按孔号 1 到 28 依次读，每孔三次。液柱若在晃，等它稳，不要把过渡过程平均进去。
+\item 最后再读一次孔 2。首尾相差超过约 0.3\,mm，说明这一遍读数过程中风速漂了，整个 run 重做。
+\item 三次重复当场写进 \texttt{readings.csv} 相邻三列，站在架子边上写。不要把数字记在脑子里再走去电脑。
+\end{enumerate}
+
+三次重复是能算出 A 类项的最低要求。只读一次，脚本就退回保守的 0.5\,mm 假设，
+报出来的 $u(\CD)$ 大约翻三倍。
+
+\section{离场前四项检查}
+
+四项加起来约五分钟，风洞还开着就能做完。每一项都对应一种"回家才发现"的失效。
+
+\begin{table}[H]
+\centering
+\caption{现场检查}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.6cm} X p{6.2cm}@{}}
+\toprule
+检查 & 判据 & 不合格怎么办 \\
+\midrule
+驻点 & $|h(\text{孔2}) - h(\text{总压})| \leq 0.3$\,mm & 两管接反或漏气：重新判定、重读 \\
+$\pm30$ 对称 & 低速下 $|h_1 - h_7| \leq 1.5$\,mm & 旋转模型、重新锁死、该 run 重做 \\
+静压漂移 & $|h(\text{孔2})_{\text{始}} - h(\text{孔2})_{\text{末}}| \leq 0.3$\,mm & 风速漂了：该 run 重做 \\
+量程 & 没有液柱顶到上限或压到底 & 风速过高，或有气泡：排气 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+某个 run 要重做，就整体重做。把一遍的前半和另一遍的后半拼起来，是做出"看起来差不多对"的
+错误分布最常见的方式。
+
+\section{回到电脑上（当天就做）}
+
+填宽表模板：一行一个孔，\texttt{hole} 列写孔号，三次重复写进 \texttt{r\_1}、\texttt{r\_2}、\texttt{r\_3}。
+温度和压力用各自的三列，写在每个 run 的第一行；留空的话脚本会退回 21.0\,$^\circ$C 和 101\,300\,Pa，
+这和"写上真实值"不是一回事。
+
+把 \texttt{cfg.demo = false}、\texttt{cfg.dataFile = 'readings.csv'} 设好，跑脚本。
+
+\begin{table}[H]
+\centering
+\caption{控制台该看什么}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.4cm} p{4.2cm} X@{}}
+\toprule
+输出 & 正常值 & 超出说明什么 \\
+\midrule
+stagnation check & $\pm0.3$\,mm 以内 & 管子认错，或漏气 \\
+\texttt{dCp30} / 整圈转角 & $|\Delta\theta| < 1^\circ$ & 模型还没对好中；分离角不可信 \\
+$u(\ReD')/\ReD'$ & 低速 1--2\,\%，高速 0.5\,\% & 远大于此说明液柱只读到 1\,mm \\
+$u(\CD')$ & 0.01--0.05，即 1--5\,\% & 突然大 2--3 倍说明重复读数不独立 \\
+$u(\theta_{\text{sep}})$ & 附着型 run 为 2--5$^\circ$ & 到 20$^\circ$ 以上说明判据失效，改报吸力峰角 \\
+式(2) 与积分 \CD & 相差约 10\,\% 以内 & 差得更多指向某个孔读坏了 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+存图、存 CSV，当晚导出 logbook。截止时间是实验次日 23:00；导出之后的笔记本不能再改。
+
+\section{记什么、记到代码哪里}
+
+这张表把"现场看到的东西"和"代码要吃的东西"一一对上。凡是标了列名的，就是
+\texttt{readings.csv} 的列名，\textbf{不能改字}——脚本按名字读表
+（\texttt{VariableNamingRule = 'preserve'}），改一个字母等于整列丢失。
+
+\begin{table}[H]
+\centering
+\caption{现场记录 $\rightarrow$ \texttt{readings.csv} 的列}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.1cm} p{3.5cm} p{2.6cm} X@{}}
+\toprule
+记录项 & 列名 & 怎么写 & 说明 \\
+\midrule
+组号 & \texttt{run} & 1--5 & 同一 run 的 30 行（28 孔 + 2 管）填同一个号 \\
+边界层 & \texttt{tripped} & 0 或 1 & 0 光滑，1 加扰流；只进标签，不进计算 \\
+转速 & \texttt{rpm} & 整数 & 备查用，不参与计算：风速由 Pitot 差值算 \\
+分度值 & \texttt{scale\_mm} & 如 1.0 & 一格多少 mm，决定 $u_B=(s/2)/\sqrt{3}$；同一 run 写一行即可 \\
+室温 & \texttt{Tair\_C\_1..3} & 21.0 / 21.1 / 20.9 & 三次；只填一次也行，脚本取非空均值 \\
+气压 & \texttt{pBaro\_Pa\_1..3} & 101300 & 三次，单位 Pa，\textbf{不是 hPa} \\
+孔号 & \texttt{hole} & 1--28 / 35 / 36 & 35、36 就是两根 Pitot 管，别写成 29、30 \\
+读数 & \texttt{r\_1}, \texttt{r\_2}, \texttt{r\_3} & mm & 三次重复，没读的留空 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{代码里要过一遍的 \texttt{cfg}}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.5cm} p{2.8cm} X@{}}
+\toprule
+参数 & 默认值 & 什么时候改 \\
+\midrule
+\texttt{cfg.demo} & \texttt{true} & 现场必须改 \texttt{false}，否则读的是合成数据 \\
+\texttt{cfg.dataFile} & \texttt{'readings.csv'} & 只有换文件名才动 \\
+\texttt{cfg.units} & \texttt{'mm'} & 板子是米刻度才改 \texttt{'m'} \\
+\texttt{cfg.uRead} & 0.5 & 只在某孔仅一次读数时生效（该点的保守 $u$），一般不动 \\
+\texttt{cfg.uScale} & 1.0 & 分度值不是 1\,mm、且 CSV 的 \texttt{scale\_mm} 也空着时改 \\
+\texttt{cfg.uTheta} & 0.29 & 换了加工公差才动（$0.5^\circ/\sqrt{3}$） \\
+\texttt{cfg.uTair}, \texttt{cfg.uPbaro} & 0.3, 50 & 换了温度计或气压计才动 \\
+\texttt{cfg.alignWarn} & 1.0 & 对中的报警线（度），与 1.5\,mm 判据配套 \\
+\texttt{cfg.thetaSepManual} & \texttt{[]} & 要强制某 run 的分离角时按 run 编号填，如 \texttt{[80 88 NaN 124]}；\texttt{NaN} = 该 run 仍走自动 \\
+\texttt{cfg.sepUncK} & 2 & 报 95\,\% 保持 2；只报 $1\sigma$ 改 1 \\
+\texttt{cfg.figFormat} & \texttt{'pdf'} & 要位图才改 \texttt{'png'} \\
+\texttt{cfg.uSigma} & \texttt{[1 2]} & 想画三级棒就加 3 \\
+\texttt{cfg.pitotOrder} & \texttt{'auto'} & 自动判定与你的观察相反时，强制 \texttt{'tube35static'} 或 \texttt{'tube36static'} \\
+\texttt{cfg.TairDefault} & 21.0 & 温度列留空时会用到——\textbf{现场必须改成当天真实值} \\
+\texttt{cfg.pBaroDefault} & 101300 & 同上，单位 Pa \\
+\texttt{cfg.nFine} & 0.25 & 精积分网格（度），不必动 \\
+\texttt{cfg.outDir} & \texttt{results} & 输出目录 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+物理常数（\texttt{dia}、\texttt{tunnelB}、\texttt{rhoEth}、\texttt{g}、\texttt{Rair}、
+\texttt{mu0}、\texttt{T0}、\texttt{Suth}）来自 handout，不要动；孔位角数组同理。
+
+\begin{table}[H]
+\centering
+\caption{留空或缺失会走哪条回退}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.4cm} p{4.3cm} X@{}}
+\toprule
+情况 & 后果 & 报告里怎么说 \\
+\midrule
+\texttt{Tair\_C\_*} 全空 & 用 \texttt{TairDefault}（21.0\,$^\circ$C） & $\rho$ 用的是默认温度，必须写明 \\
+\texttt{pBaro\_Pa\_*} 全空 & 用 \texttt{pBaroDefault}（101300\,Pa） & 同上 \\
+\texttt{scale\_mm} 空 & 用 \texttt{cfg.uScale} = 1.0\,mm & $u_B$ 取 0.289\,mm \\
+某孔只填 1 个重复 & 该点退回 0.5\,mm，无 A 类项 & $u(\CD)$ 会大约翻三倍 \\
+某孔三列全空 & 该 run 打印 \texttt{[skip]} 并跳过 & 补齐后重跑；不要用 0 占位 \\
+35 或 36 缺读数 & 该 run \texttt{[skip]} & 同上 \\
+整行漏掉 & 同上 & 同上 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+一句话：\textbf{CSV 决定数据，\texttt{cfg} 决定模型}。读数进 CSV，常数与阈值进 \texttt{cfg}，
+两边不要互相顶。结果 CSV 是 29 列，但 logbook 里真正要抄的只有七个数：
+$\CD'$、式(2) 的 $\CD$、积分法 $\CD$、$V/V'$、$\theta_{\text{sep}}$、\ReD{}'、
+以及 $u(\CD')$ / $u(\theta_{\text{sep}})$ / $\Delta\theta$ 三个不确定度。
+
+\section{故障处理}
+
+\begin{table}[H]
+\centering
+\caption{常见故障}
+\small
+\begin{tabularx}{\textwidth}{@{}p{4.6cm} X p{5.6cm}@{}}
+\toprule
+现象 & 最可能的原因 & 处理 \\
+\midrule
+某一个 \Cp{} 明显跳出邻居 & 气泡或管子被压折 & 排气，只重读那一孔 \\
+所有 \Cp{} 同向平移 & 静压管认错，或中途重新调了水平 & 重新调零，整遍重读 \\
+孔 2 的 \Cp{} 低于总压管 & 孔 2 不在驻点 & 查对中，重新判定两管 \\
+加扰流的 run 分离点跑到 $180^\circ$ & 判据没找到平缓段 & 高阻塞下本来就会这样；报吸力峰角并说明 \\
+\ReD{} 落在 $10^5$--$10^6$ 之外 & 风速与 rpm 列不符 & 重读动压头，改正录入值 \\
+脚本报缺模块后停下 & 少了一个不确定度文件 & 把两个文件拷到 \texttt{cylinder\_lab.m} 同目录；
+缺文件时 run 仍能跑完 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{时间预算}
+
+\begin{table}[H]
+\centering
+\caption{两小时现场的可行预算}
+\small
+\begin{tabularx}{\textwidth}{@{}X c p{7.4cm}@{}}
+\toprule
+阶段 & 分钟 & 备注 \\
+\midrule
+安全、开机、调水平 & 10 & 开门，风扇最小 \\
+用 1、7 号孔对中 & 15 & 迭代到 $|h_1 - h_7| \leq 1.5$\,mm \\
+判定 Pitot 管 & 5 & 孔 2 对 35、36 \\
+run 1（光滑，低速） & 12 & 30 个读数，各三次 \\
+run 2（光滑，高速） & 12 & 同一套路，提速 \\
+装或拆扰流 & 10 & 记类型和位置 \\
+run 3（加扰流，低速） & 12 & 平台应明显不同 \\
+run 4（加扰流，高速） & 12 & 同上 \\
+可选 run 5 & 12 & 重复 run 3 \\
+末检与收摊 & 10 & 四项检查，风扇归零，拔管 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{一页打勾清单}
+
+\begin{table}[H]
+\centering
+\caption{现场顺序}
+\small
+\begin{tabularx}{\textwidth}{@{}c X p{5.0cm} c@{}}
+\toprule
+\# & 步骤 & 完成判据 & $\checkmark$ \\
+\midrule
+1 & 开门、风扇最小、板子调平 & 30 根管全接上，无压折 & $\square$ \\
+2 & 记 $T$ 和 $p$，各三次 & 数值写进该 run 第一行 & $\square$ \\
+3 & 用 1、7 号孔对中 & 低速下 $|h_1 - h_7| \leq 1.5$\,mm & $\square$ \\
+4 & 判定两根 Pitot 管 & $|h(\text{孔2}) - h(\text{总压})| \leq 0.3$\,mm & $\square$ \\
+5 & run 1，光滑低速 & 孔 2 首尾相差 0.3\,mm 内 & $\square$ \\
+6 & run 2，光滑高速 & 同上 & $\square$ \\
+7 & 装上扰流，写下配置 & logbook 条目完整 & $\square$ \\
+8 & run 3，加扰流低速 & 尾部能看到平台 & $\square$ \\
+9 & run 4，加扰流高速 & 同上 & $\square$ \\
+10 & 可选 run 5 & 重复 run 3 & $\square$ \\
+11 & 四项现场检查 & 四项全过 & $\square$ \\
+12 & 收摊 & 风扇归零，拔管，工作段清空 & $\square$ \\
+13 & 填好 \texttt{readings.csv}，跑脚本 & 控制台零 warning & $\square$ \\
+14 & 存图存表，导出 logbook & 次日 23:00 前拿到 PDF & $\square$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}

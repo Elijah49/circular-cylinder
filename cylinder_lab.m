@@ -70,10 +70,23 @@ cfg.uRead       = 0.5;         % CONSERVATIVE std uncertainty of one reading [mm
                                % readings are available (see cfg.dataFile)
 cfg.uScale      = 1.0;         % board scale resolution [mm] -> type B term
                                % u_B = (uScale/2)/sqrt(3) = 0.289 mm
+cfg.uTheta      = 0.29;        % std uncertainty of ONE tapping's angular
+                               % position [deg]; a +-0.5 deg tolerance gives
+                               % 0.5/sqrt(3) = 0.29
+cfg.uTair       = 0.3;         % std uncertainty of the air temperature [K]
+                               % (thermometer resolution + room gradient)
+cfg.uPbaro      = 50;          % std uncertainty of the barometric pressure [Pa]
+cfg.alignWarn   = 1.0;         % [deg] warn when the -30/+30 pair implies a
+                               % datum rotation larger than this
 cfg.dataFile    = 'readings.csv';   % repeat-reading log. If this file exists
                                % and cfg.demo is false, both the readings AND
                                % the measured type A uncertainty come from it
 cfg.sepUncK     = 2;           % coverage factor for the reported U95
+cfg.figFormat   = 'pdf';       % 'pdf' (vector, for LaTeX) | 'eps' | 'png'
+cfg.uSigma      = [1 2];       % sigma levels drawn as nested bars:
+                               %   1 -> solid, capped
+                               %   2 -> thin, pale, no caps
+                               % add 3 here for a three-level figure
 cfg.outDir      = fullfile(pwd,'results');
 cfg.TairDefault  = 21.0;       % <<< update to the tunnel room temperature
 cfg.pBaroDefault = 101300;     % <<< update to the day's barometric pressure
@@ -166,7 +179,8 @@ cpTheory = 1 - 4*sind(thTheory).^2;
 fields = {'label','tripped','rpm','Tair','pBaro','rho','mu','U','Ucorr', ...
           'Re','Recorr','Cp','CpCorr','CDprime','CDfine','CLsym','CL', ...
           'dCp30','CDcorrInt','CDcorrEq2','VV','thetaSep','thetaCpmin', ...
-          'Cpmin','hStat','hTot','iStat','ReEq','unc','uncA'};
+          'Cpmin','hStat','hTot','iStat','ReEq','unc','uncA','urun', ...
+          'dThetaAlign'};
 res = struct();
 for fi = 1:numel(fields), res.(fields{fi}) = []; end
 res = repmat(res, 1, 0);               % 0x0 struct array, all fields present
@@ -238,11 +252,12 @@ for k = 1:numel(runs)
     %   unc  - conservative: every reading taken as +-cfg.uRead
     %   uncA - measured: type A from the repeat readings in readings.csv,
     %          combined with the type B scale term; NaN if not available
+    Bmm = abs(hTot - hStat);            % Pitot column difference, used twice
     if exist('cpUncertainty','file') == 2
-        Bmm = abs(hTot - hStat);
         unc = cpUncertainty(Bmm, cfg.uRead, cfg.uRead, cfg.uRead, ...
                             Cp(2:end), thetaHole(2:end), thetaSep, ...
                             cfg.nFine, cfg.sepUncK);
+        uSt = cfg.uRead;  uTt = cfg.uRead;      % default: conservative
         if ~isempty(uMeas)
             % which Pitot tube is static was decided above (iStat)
             if iStat == 35
@@ -265,11 +280,61 @@ for k = 1:numel(runs)
         uncA = nanUnc(cfg);
     end
 
+    % ---- symmetry diagnostic across the -30 / +30 pair
+    % Holes 1 and 7 are mirror images about hole 2, so a PERFECTLY aligned
+    % cylinder must give Cp(-30) = Cp(+30). A difference means the flow datum
+    % is rotated: the taps sit at theta_i but the flow sees theta_i + dTheta.
+    % Expanding about the symmetric value P with g = dCp/dtheta at +30:
+    %   Cp(-30+dt) - Cp(30+dt) = (P - g dt) - (P + g dt) = -2 g dt
+    % so the common rotation is  dTheta = -dCp30/(2g).  This is a COHERENT
+    % error (one number for the whole ring), not a per-tap random one, so it
+    % must not be averaged down over the taps.
+    dCp30 = Cp(thetaHole == -30) - Cp(thetaHole == 30);
+    i20 = find(thetaHole == 20, 1);
+    i40 = find(thetaHole == 40, 1);
+    if isempty(i20) || isempty(i40)
+        g = NaN;
+    else
+        g = (Cp(i40) - Cp(i20))/(thetaHole(i40) - thetaHole(i20));  % per deg
+    end
+    if isfinite(g) && abs(g) > 1e-3
+        dThetaAlign = -dCp30/(2*g);
+    else
+        dThetaAlign = NaN;      % no slope to convert the mismatch into an angle
+    end
+    if isfinite(dThetaAlign) && abs(dThetaAlign) > cfg.alignWarn
+        fprintf('  [!] datum rotated by %+.2f deg (> %.1f deg): re-check the\n', ...
+                dThetaAlign, cfg.alignWarn);
+        fprintf('      alignment before trusting thetaSep\n');
+    end
+
+    % ---- uncertainty of Re and of the tap POSITIONS (separate module)
+    % Everything that is not a function of Cp lives here: the q -> U -> Re
+    % chain (rho and mu enter through T and p) and the angular uncertainty
+    % of the tappings, which feeds both CD and the separation angle.
+    if isfinite(uncA.uCD)
+        uCDuse = uncA.uCD;
+    else
+        uCDuse = unc.uCD;
+    end
+    if exist('runUncertainty','file') == 2
+        urun = runUncertainty(struct( ...
+            'U',U,'Re',Re,'ReCorr',Recorr,'rho',rhoAir,'mu',muAir, ...
+            'T_K',Tair + 273.15,'p',pBaro,'S',cfg.Suth,'Bmm',Bmm, ...
+            'uStat',uSt,'uTot',uTt,'uTairK',cfg.uTair,'uPbaro',cfg.uPbaro, ...
+            'r',cfg.dia/cfg.tunnelB,'CDp',CDp,'uCD',uCDuse, ...
+            'thDeg',thetaHole(2:end),'Cp',Cp(2:end),'uTheta',cfg.uTheta, ...
+            'dThetaAlign',dThetaAlign));
+    else
+        fprintf('  [note] runUncertainty.m not found - u(Re) and u(theta) skipped\n');
+        urun = struct('uQRel',NaN,'uRhoRel',NaN,'uMuRel',NaN,'uURel',NaN, ...
+                      'uReRel',NaN,'uRe',NaN,'uReCorrRel',NaN,'uReCorr',NaN, ...
+                      'uCDtheta',NaN,'uThetaSep',NaN,'uCDtap',NaN,'dCDcoh',NaN, ...
+                      'dThetaAlign',NaN);
+    end
+
     % ---- equivalent Reynolds number of the tripped case
     ReEq = equivalentRe(CDcorrEq2, cfg);
-
-    % ---- symmetry diagnostic across the -30 / +30 pair
-    dCp30 = Cp(thetaHole == -30) - Cp(thetaHole == 30);
 
     res(end+1) = struct('label',run.label,'tripped',run.tripped,'rpm',run.rpm, ...
         'Tair',Tair,'pBaro',pBaro,'rho',rhoAir,'mu',muAir,'U',U,'Ucorr',Ucorr, ...
@@ -278,7 +343,7 @@ for k = 1:numel(runs)
         'CDcorrInt',CDcorrInt,'CDcorrEq2',CDcorrEq2,'VV',VV, ...
         'thetaSep',thetaSep,'thetaCpmin',thetaCpmin,'Cpmin',min(Cp), ...
         'hStat',hStat,'hTot',hTot,'iStat',iStat,'ReEq',ReEq,'unc',unc, ...
-        'uncA',uncA);
+        'uncA',uncA,'urun',urun,'dThetaAlign',dThetaAlign);
 
     fprintf('\n--- %s  (tripped = %d, %.0f rpm) ---\n', run.label, run.tripped, run.rpm);
     fprintf('  rho  = %.3f kg/m3 , mu = %.3e Pa s , T = %.1f C , p = %.0f Pa\n', ...
@@ -301,6 +366,20 @@ for k = 1:numel(runs)
         fprintf('  u (measured, n>=2):   u(Cp_peak)=%.3f  u(CD'')=%.3f (%.1f %%)  u(sep)=%.1f deg\n', ...
                 uncA.uCpPeak, uncA.uCD, 100*uncA.uCDrel, uncA.uThetaSep);
     end
+    if isfinite(urun.uRe)
+        base = unc.uCD;
+        if isfinite(uncA.uCD), base = uncA.uCD; end
+        fprintf('  u(Re) chain:          u(Re'')/Re''=%.2f %%  (q %.2f, rho %.3f, mu %.3f %%)\n', ...
+                100*urun.uReRel, 100*urun.uQRel, 100*urun.uRhoRel, 100*urun.uMuRel);
+        fprintf('                        u(Re)/Re  = %.2f %%  (folded-in V/V'' term %.3f %%)\n', ...
+                100*urun.uReCorrRel, ...
+                100*sqrt(max(0, urun.uReCorrRel^2 - urun.uReRel^2)));
+        fprintf('  u(CD) from angles:    %.4f (per-tap +-%.2f deg) + %.4f (ring %+.2f deg)  ->  u(CD) total %.4f\n', ...
+                urun.uCDtap, cfg.uTheta, urun.dCDcoh, dThetaAlign, ...
+                hypot(base, urun.uCDtheta));
+        fprintf('  +-30 pair:            dCp30 = %+.4f  ->  ring rotation %+.2f deg , u(sep) total %.1f deg\n', ...
+                dCp30, dThetaAlign, hypot(unc.uThetaSep, urun.uThetaSep));
+    end
     fprintf('  +-30 deg mismatch: dCp = %+.3f  (CL by symmetry = %.4f, from data = %+.4f)\n', ...
             dCp30, CLsym, CLasym);
 end
@@ -318,26 +397,38 @@ writeCsv(res, csvFile);
 fprintf('Table written to: %s\n', csvFile);
 
 %% ------------------------------ 5. PLOTS -------------------------------
-fig1 = plotCp(res, thetaHole, thTheory, cpTheory, false);
-fig2 = plotCp(res, thetaHole, thTheory, cpTheory, true);
+fig1 = plotCp(res, thetaHole, thTheory, cpTheory, false, cfg);
+fig2 = plotCp(res, thetaHole, thTheory, cpTheory, true,  cfg);
 fig3 = plotCdRe(res, cfg);
-fig4 = plotPolar(res, thetaHole);
+fig4 = plotPolar(res, thetaHole, cfg);
+fig5 = plotSlope(res, thetaHole, cfg);   % dCp/dtheta, the quantity the criterion uses
+
+% All four figures get BOTH a .fig (editable inside MATLAB) and a vector
+% export, so nothing in results/ is a raster screenshot of a figure that
+% cannot be edited afterwards.
+figs  = [fig1 fig2 fig3 fig4 fig5];
+figNm = {'Cp_vs_theta', 'Cp_corrected', 'CD_vs_Re', 'pressure_polar', 'dCp_dtheta'};
 
 % .fig first: exportgraphics leaves the handles in a state savefig rejects
-savefig(fig1, fullfile(cfg.outDir,[pre 'Cp_vs_theta.fig']));
-savefig(fig2, fullfile(cfg.outDir,[pre 'Cp_corrected.fig']));
-for fk = [fig1 fig2 fig3 fig4]
+for k = 1:numel(figs)
+    savefig(figs(k), fullfile(cfg.outDir,[pre figNm{k} '.fig']));
+end
+for fk = figs
     for a = findall(fk,'Type','axes')'
         if isprop(a,'Toolbar') && ~isempty(a.Toolbar)
             a.Toolbar.Visible = 'off';   % keeps the export warning quiet
         end
     end
 end
-exportgraphics(fig1, fullfile(cfg.outDir,[pre 'Cp_vs_theta.png']), 'Resolution', 150);
-exportgraphics(fig2, fullfile(cfg.outDir,[pre 'Cp_corrected.png']), 'Resolution', 150);
-exportgraphics(fig3, fullfile(cfg.outDir,[pre 'CD_vs_Re.png']), 'Resolution', 150);
-exportgraphics(fig4, fullfile(cfg.outDir,[pre 'pressure_polar.png']), 'Resolution', 150);
-fprintf('Figures written to: %s\n', cfg.outDir);
+for k = 1:numel(figs)
+    outFile = fullfile(cfg.outDir,[pre figNm{k} '.' cfg.figFormat]);
+    if strcmpi(cfg.figFormat,'png')
+        exportgraphics(figs(k), outFile, 'Resolution', 150);
+    else
+        exportgraphics(figs(k), outFile, 'ContentType','vector');
+    end
+end
+fprintf('Figures written to: %s  (.fig + .%s for all %d)\n', cfg.outDir, cfg.figFormat, numel(figs));
 
 fprintf('\n================ END ================\n');
 
@@ -557,19 +648,24 @@ fclose(fid);
 end
 
 % -----------------------------------------------------------------------
-function f = plotCp(res, thetaHole, thTheory, cpTheory, corrected)
+function f = plotCp(res, thetaHole, thTheory, cpTheory, corrected, cfg)
 % Figure 1: measured Cp of every case against the potential-flow curve.
 % Figure 2: for every case BOTH the uncorrected (dashed) and the
 %           blocked-corrected (solid) distribution, as the handout asks.
+% Bars: cfg.uSigma = [1 2] draws a solid capped 1-sigma bar plus 2-sigma
+% end ticks, so the two levels cannot be confused.
 if corrected
-    ttl = 'Blockage-corrected (solid) and uncorrected (dashed) C_p';
+    ttl = ['Blockage-corrected (solid) and uncorrected (dashed) C_p   (bars: ' ...
+           sigmaBarText(cfg) ')'];
 else
-    ttl = 'C_p against \theta';
+    ttl = ['C_p against \theta   (vertical = C_p, horizontal = tapping angle; ' ...
+           'bars: ' sigmaBarText(cfg) ')'];
 end
 f = figure('Color','w','Position',[80 80 1000 560]); hold on; box on; grid on;
 n = numel(res);
 cols = lines(n);
 ht = plot(thTheory, cpTheory, 'k--', 'LineWidth', 1.4);
+hSepKey = plot(nan, nan, ':', 'Color', [0.45 0.45 0.45], 'LineWidth', 0.7);
 
 if corrected
     h = gobjects(1, 2*n);
@@ -578,6 +674,14 @@ if corrected
         h(2*k-1) = plot(thetaHole, res(k).Cp, '--', 'Color', cols(k,:), 'LineWidth', 1.0);
         h(2*k)   = plot(thetaHole, res(k).CpCorr, '-o', 'Color', cols(k,:), ...
                         'LineWidth', 1.3, 'MarkerSize', 5, 'MarkerFaceColor','w');
+        % bars on the CORRECTED series only; the correction is a
+        % linear map Cp -> 1 + (Cp-1)/VV^2, so u scales by 1/VV^2
+        uP = sigmaCp(res(k));
+        if ~isempty(uP)
+            xb = thetaBar(res(k), cfg);  % angular uncertainty of ONE tapping
+            drawSigma(thetaHole(2:end), res(k).CpCorr(2:end), uP/res(k).VV^2, ...
+                      xb, cols(k,:), cfg.uSigma);
+        end
         lab{2*k-1} = [res(k).label ' - uncorrected'];
         lab{2*k}   = [res(k).label ' - corrected'];
     end
@@ -587,18 +691,41 @@ else
     for k = 1:n
         h(k) = plot(thetaHole, res(k).Cp, '-o', 'Color', cols(k,:), ...
                     'LineWidth', 1.2, 'MarkerSize', 5, 'MarkerFaceColor','w');
+        uP = sigmaCp(res(k));
+        if ~isempty(uP)
+            xb = thetaBar(res(k), cfg);  % angular uncertainty of ONE tapping
+            drawSigma(thetaHole(2:end), res(k).Cp(2:end), uP, xb, cols(k,:), cfg.uSigma);
+        end
         cpSep = interp1(thetaHole, res(k).Cp, res(k).thetaSep, 'pchip');
         plot(res(k).thetaSep, cpSep, 'x', 'Color', cols(k,:), ...
              'MarkerSize', 10, 'LineWidth', 1.6);
-        lab{k} = sprintf('%s  (sep %.0f%c)', res(k).label, res(k).thetaSep, 176);
+        us = separationBar(res(k));           % angular uncertainty of sep
+        % The separation angle is known to a few degrees at best (up to ~20 deg
+        % when the knee is weak), which is 50x the tapping error. A full-length
+        % solid bar therefore swamps the plot, so it is drawn dotted and the
+        % number is printed next to it: the whisker says "somewhere in here",
+        % the text says how wide, and neither hides the data.
+        if isfinite(us) && us > 0
+            plot([res(k).thetaSep - us, res(k).thetaSep + us], [cpSep cpSep], ...
+                 ':', 'Color', colMix(cols(k,:)), 'LineWidth', 0.7, ...
+                 'HandleVisibility','off');
+            plot([res(k).thetaSep - us, res(k).thetaSep - us], ...
+                 cpSep + [-0.03 0.03], ':', 'Color', cols(k,:), ...
+                 'LineWidth', 0.7, 'HandleVisibility','off');
+            plot([res(k).thetaSep + us, res(k).thetaSep + us], ...
+                 cpSep + [-0.03 0.03], ':', 'Color', cols(k,:), ...
+                 'LineWidth', 0.7, 'HandleVisibility','off');
+        end
+        lab{k} = sprintf('%s   (sep %.0f^{\\circ} \\pm %.0f^{\\circ})', res(k).label, res(k).thetaSep, us);
     end
 end
-lab{end} = 'Potential flow:  C_p = 1 - 4 sin^2\theta';
+lab{end}   = 'Potential flow:  C_p = 1 - 4 sin^2\theta';
+lab{end+1} = sprintf('dotted whisker = %cu(theta_sep)', 177);
 
 xlabel('\theta  [deg]'); ylabel('C_p');
 xlim([0 180]); set(gca,'XTick',0:20:180);
 title(ttl);
-legend([h ht], lab, 'Location','eastoutside','FontSize',8);
+legend([h ht hSepKey], lab, 'Location','eastoutside','FontSize',8,'Interpreter','tex');
 hold off
 end
 
@@ -616,6 +743,20 @@ for k = 1:n
                      'MarkerFaceColor','w', 'MarkerSize', 9);
     h2(k) = semilogx(q.Recorr, q.CDcorrEq2, 'o', 'Color', colsc(k,:), ...
                      'MarkerFaceColor', colsc(k,:), 'MarkerSize', 9);
+    % ---- bars: vertical on C_D, horizontal on Re, nested per cfg.uSigma ---
+    uCD = sigmaCD(q);
+    if isfinite(uCD)
+        r    = cfg.dia/cfg.tunnelB;
+        fac  = abs(1 - q.CDprime*r - 2.5*r^2);      % d(CD_corr)/d(CD')
+        % horizontal bars: full chain u(q) -> u(U) -> u(Re), plus the V/V'
+        % term for the corrected point (runUncertainty.m)
+        if isfinite(q.urun.uReRel)
+            drawSigma(q.Re, q.CDprime, uCD, q.Re*q.urun.uReRel, ...
+                      colsc(k,:), cfg.uSigma);
+            drawSigma(q.Recorr, q.CDcorrEq2, fac*uCD, ...
+                      q.Recorr*q.urun.uReCorrRel, colsc(k,:), cfg.uSigma);
+        end
+    end
     if q.tripped && ~isnan(q.ReEq)
         semilogx(q.ReEq, q.CDcorrEq2, 'p', 'Color','k', ...
                  'MarkerFaceColor',[1 0.85 0], 'MarkerSize', 13);
@@ -624,7 +765,8 @@ end
 set(gca, 'XScale','log');          % the dummy plot handle resets it to linear
 xlim([5e4 2e7]);
 xlabel('Re = \rho U d / \mu'); ylabel('C_D');
-title('C_D against Re   (hollow = uncorrected, filled = corrected)');
+title(['C_D against Re   (hollow = uncorrected, filled = corrected); ' ...
+       'bars: ' sigmaBarText(cfg) ')']);
 lab = cell(1, 2*n + 2);
 lab{1} = 'Reference curve (approx., Anderson Fig 3.44 / Roshko Fig 2)';
 for k = 1:n, lab{1+k}     = [res(k).label ' - uncorrected']; end
@@ -635,8 +777,10 @@ hold off
 end
 
 % -----------------------------------------------------------------------
-function f = plotPolar(res, thetaHole)
+function f = plotPolar(res, thetaHole, cfg)
 % Cross-section plane, r = -Cp, mirrored about the flow axis.
+% Every measured tapping carries a tick along its own radial direction, drawn
+% once per level in cfg.uSigma (1-sigma solid, 2-sigma pale and longer).
 f = figure('Color','w','Position',[160 160 640 640]); hold on; box on; grid on;
 cols = lines(numel(res));
 thF = (0:1:180)';
@@ -646,9 +790,33 @@ for k = 1:numel(res)
     x = -cp.*cosd(thF);  y = cp.*sind(thF);
     h(k) = plot(x, y, '-', 'Color', cols(k,:), 'LineWidth', 1.2);
     plot(x, -y, '-', 'Color', cols(k,:), 'LineWidth', 1.2, 'HandleVisibility','off');
+
+    % tick at every measured tapping: a short segment along the same
+    % radial direction, from (Cp - s*u) to (Cp + s*u); one NaN-joined object
+    % per level, mirrored so the figure stays symmetric
+    uP = sigmaCp(res(k));
+    if ~isempty(uP)
+        ct = res(k).Cp(2:end);  tt = thetaHole(2:end);
+        for s = sort(cfg.uSigma(:)','descend')
+            if s == 1
+                cc = cols(k,:); lw = 0.5;
+            else
+                cc = cols(k,:) + 0.65*(1 - cols(k,:)); lw = 0.35;
+            end
+            xa = -(ct + s*uP).*cosd(tt);  ya = (ct + s*uP).*sind(tt);
+            xb = -(ct - s*uP).*cosd(tt);  yb = (ct - s*uP).*sind(tt);
+            xs = reshape([xa; xb; nan(size(xa))], 1, []);
+            ys = reshape([ya; yb; nan(size(ya))], 1, []);
+            plot(xs, ys, '-', 'Color', cc, 'LineWidth', lw, ...
+                 'HandleVisibility','off');
+            plot(xs, -ys, '-', 'Color', cc, 'LineWidth', lw, ...
+                 'HandleVisibility','off');
+        end
+    end
 end
 axis equal; xlabel('-C_p cos\theta'); ylabel('C_p sin\theta');
-title('Pressure distribution in the cross-section plane (r = -C_p)');
+title(['Pressure distribution in the cross-section plane (r = -C_p); ' ...
+       'bars: ' sigmaBarText(cfg) ')']);
 lab = cell(1,numel(res));
 for k = 1:numel(res), lab{k} = res(k).label; end
 legend(h, lab, 'Location','best','FontSize',8);
@@ -656,6 +824,64 @@ hold off
 end
 
 % -----------------------------------------------------------------------
+function f = plotSlope(res, thetaHole, cfg)
+% The quantity the separation criterion actually tests: dCp/dtheta.
+%
+% Why this plot is worth having: the criterion in sepDetect is NOT
+% "dCp/dtheta = 0", because that is also true at the suction peak (75-95 deg)
+% where the flow is still attached. What identifies the plateau is that the
+% slope stays small over a whole 12 deg window, and only after a steep
+% recovery. Both halves of that sentence are visible here: the curve crosses
+% zero at the peak, dives negative, then returns towards zero; the run whose
+% knee is weak never settles there --- which is exactly the run that ends up
+% with u(thetaSep) = 20 deg.
+%
+% Each curve is normalised by its own post-peak maximum |dCp/dtheta|, so the
+% two thresholds used by the code (0.1 dmax instantaneous, 0.12 dmax over the
+% window) are the same two horizontal lines for every run.
+thF  = (0:cfg.nFine:180)';
+cols = lines(numel(res));
+f = figure('Color','w','Position',[80 80 1000 520]); hold on; box on; grid on;
+h = gobjects(1, numel(res));  lab = cell(1, numel(res));
+nk = 0;
+
+for k = 1:numel(res)
+    cpF = interp1(thetaHole(2:end), res(k).Cp(2:end), thF, 'pchip');
+    d   = gradient(cpF, cfg.nFine);
+    ds  = movmean(d, 9);
+    [~, iMin] = min(cpF);
+    dmax = max(ds(iMin:end));
+    if ~isfinite(dmax) || dmax <= 0, continue, end
+    nk = nk + 1;
+    h(nk) = plot(thF, ds/dmax, '-', 'Color', cols(k,:), 'LineWidth', 1.2);
+    if isfinite(res(k).thetaCpmin)
+        plot(res(k).thetaCpmin, 0, 'o', 'Color', cols(k,:), ...
+             'MarkerSize', 6, 'MarkerFaceColor','w', 'HandleVisibility','off');
+    end
+    plot([res(k).thetaSep res(k).thetaSep], [-1.05 0.15], ':', ...
+         'Color', colMix(cols(k,:),0.35), 'LineWidth', 1.0, ...
+         'HandleVisibility','off');
+    lab{nk} = sprintf('%s   (peak %d%s, sep %d%s)', shorten(res(k).label,22), ...
+                      round(res(k).thetaCpmin), char(176), ...
+                      round(res(k).thetaSep),  char(176));
+end
+
+hThr = plot([0 180], [0.1 0.1], 'k--', 'LineWidth', 0.9);
+plot([0 180], [-0.1 -0.1], 'k--', 'LineWidth', 0.9);
+plot([0 180], [ 0    0  ], 'k-',  'LineWidth', 0.5);
+lab{nk+1} = sprintf('threshold |dC_p/d\\theta| = 0.1 d_{max} (window mean 0.12)');
+
+xlabel('\theta  [deg]');
+ylabel('(dC_p/d\theta) / max after the peak');
+pk = [res.thetaCpmin]; pk = pk(isfinite(pk));
+xlim([max(0, floor(min(pk)/10)*10-10) 180]);
+set(gca,'XTick',50:10:180);
+title('dC_p/d\theta along the recovery   (o = suction peak, dotted = chosen separation)');
+legend([h(1:nk) hThr], lab(1:nk+1), 'Location','eastoutside', 'FontSize', 8, ...
+       'Interpreter','tex');
+hold off
+end
+
 function runs = demoRuns(thetaHole, cfg)
 % SYNTHETIC readings so the whole pipeline can be tested before the lab.
 % The Cp shapes are hand-built anchor tables with literature-typical
@@ -843,4 +1069,132 @@ if isempty(v)
 else
     x = mean(v);
 end
+end
+
+% -----------------------------------------------------------------------
+function u = sigmaCp(q)
+% 1-sigma u(Cp) of the tappings that enter the integrals (holes 2..28).
+% The value actually measured from the repeat readings is preferred; the
+% conservative cfg.uRead-based value is used when there is no repeat.
+% Hole 1 (-30 deg) lies outside the integration set and therefore carries
+% no bar in the plots.
+u = [];
+if isfield(q,'uncA') && isstruct(q.uncA) && ~isempty(q.uncA.uCp) ...
+        && any(isfinite(q.uncA.uCp))
+    u = q.uncA.uCp(:)';
+elseif isfield(q,'unc') && isstruct(q.unc) && ~isempty(q.unc.uCp) ...
+        && any(isfinite(q.unc.uCp))
+    u = q.unc.uCp(:)';
+end
+end
+
+% -----------------------------------------------------------------------
+function u = separationBar(q)
+% Total angular uncertainty of thetaSep: the slope-based part from
+% cpUncertainty.m (measured preferred) plus the tapping-position term from
+% runUncertainty.m, added in quadrature.
+u = NaN;
+if isfield(q,'uncA') && isstruct(q.uncA) && isfinite(q.uncA.uThetaSep)
+    u = q.uncA.uThetaSep;
+elseif isfield(q,'unc') && isstruct(q.unc) && isfinite(q.unc.uThetaSep)
+    u = q.unc.uThetaSep;
+end
+if isfinite(u) && isfield(q,'urun') && isstruct(q.urun) ...
+        && isfinite(q.urun.uThetaSep)
+    u = hypot(u, q.urun.uThetaSep);
+end
+end
+
+% -----------------------------------------------------------------------
+function xb = thetaBar(q, cfg)
+% Half-width of the horizontal bar under EACH tapping on the Cp-theta plots:
+% the standard uncertainty of that tapping's angular POSITION, which is
+%   u(theta_i) = sqrt(uTheta^2 + dTheta^2)
+% uTheta is the assumed machining spacing error (cfg.uTheta, 0.29 deg for a
+% 0.5 deg tolerance, rectangular -> /sqrt(3)); dTheta is the whole-ring shift
+% implied by the +-30 deg mirror pair, so it is COMMON to every tapping.
+% Do NOT use u(thetaSep) here: that is the uncertainty of one fitted crossing
+% point (2.5-45 deg) and belongs to the separation marker, not to the tappings.
+xb = cfg.uTheta;
+if isfield(q,'urun') && isstruct(q.urun) && isfield(q.urun,'dThetaAlign') ...
+        && isfinite(q.urun.dThetaAlign)
+    xb = hypot(cfg.uTheta, q.urun.dThetaAlign);
+end
+end
+
+% -----------------------------------------------------------------------
+function u = sigmaCD(q)
+% 1-sigma u(CD') of one run, measured value preferred, with the tapping
+% POSITION term from runUncertainty.m folded in quadrature (a tap sitting
+% 0.29 deg off also moves the trapezoidal weights, so it does shift CD).
+u = NaN;
+if isfield(q,'uncA') && isstruct(q.uncA) && isfinite(q.uncA.uCD)
+    u = q.uncA.uCD;
+elseif isfield(q,'unc') && isstruct(q.unc) && isfinite(q.unc.uCD)
+    u = q.unc.uCD;
+end
+if isfinite(u) && isfield(q,'urun') && isstruct(q.urun) ...
+        && isfinite(q.urun.uCDtheta)
+    u = hypot(u, q.urun.uCDtheta);
+end
+end
+
+% -----------------------------------------------------------------------
+function drawSigma(x, y, uy, ux, col, levels)
+% Nested error bars for ONE series, one pass per level in `levels`:
+%   level 1  -> solid bar with caps, series colour, plus the horizontal
+%               (tapping angle / Re) bar when ux is supplied
+%   level >1 -> vertical bar only, thin and pale, with its own caps
+% The higher level is drawn first so the 1-sigma bar sits on top: the shared
+% middle is covered, and only the outer pale segment plus its caps remain
+% visible, which is how a two-level bar is read in print.
+if nargin < 6 || isempty(levels), levels = 1; end
+if nargin < 4, ux = []; end
+x = x(:)';  y = y(:)';  uy = uy(:)';
+if isempty(ux)
+    ux = zeros(size(uy));
+else
+    ux = ux(:)';
+    if numel(ux) == 1, ux = repmat(ux, size(uy)); end
+    if numel(ux) ~= numel(uy), ux = zeros(size(uy)); end
+end
+ok = isfinite(uy) & isfinite(x) & isfinite(y);
+if ~any(ok), return, end
+
+for s = sort(levels(:)','descend')
+    if s == 1
+        errorbar(x(ok), y(ok), uy(ok), uy(ok), ux(ok), ux(ok), ...
+                 'LineStyle','none', 'Color', col, 'LineWidth', 0.8, ...
+                 'CapSize', 4, 'HandleVisibility','off');
+    else
+        cc = col + 0.45*(1 - col);          % pale, but not a ghost in print
+        errorbar(x(ok), y(ok), s*uy(ok), s*uy(ok), ...
+                 'LineStyle','none', 'Color', cc, 'LineWidth', 0.5, ...
+                 'CapSize', 3, 'HandleVisibility','off');
+    end
+end
+end
+
+% -----------------------------------------------------------------------
+function c = colMix(c, f)
+% Fade a colour towards white: used for ticks/whiskers that carry information
+% but must not compete with the data.
+if nargin < 2, f = 0.65; end
+c = c + f*(1 - c);
+end
+
+% -----------------------------------------------------------------------
+function s = sigmaBarText(cfg)
+% Figure title fragment that says which levels the bars stand for, e.g.
+%   "bars: 2\sigma (pale) and 1\sigma (solid)"
+lv = sort(cfg.uSigma(:)','descend');
+p  = cell(1, numel(lv));
+for i = 1:numel(lv)
+    if lv(i) == 1
+        p{i} = '1\sigma solid';
+    else
+        p{i} = sprintf('%d\\sigma thin', lv(i));
+    end
+end
+s = strjoin(p, ', ');
 end

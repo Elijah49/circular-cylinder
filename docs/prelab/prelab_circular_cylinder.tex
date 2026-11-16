@@ -1,0 +1,412 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titleformat{\section}{\Large\bfseries\color{black}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{black}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{black}}{\thesubsubsection}{0.6em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\linespread{1.2}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\tabularxcolumn}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\emergencystretch}{4em}
+
+\newcommand{\Cp}{\ensuremath{C_p}}
+\newcommand{\CD}{\ensuremath{C_D}}
+\newcommand{\CL}{\ensuremath{C_L}}
+\newcommand{\ReD}{\ensuremath{\mathit{Re}}}
+\newcommand{\thsep}{\ensuremath{\theta_{\text{sep}}}}
+
+\pagestyle{plain}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries Prelab: Pressure Distribution on a Circular Cylinder}\\[4pt]
+{\large Engineering Practice 2 -- Aerodynamics 2}\\[8pt]
+{\small RODH 115 (ex L50) \quad\textbar\quad $d = 102$\,mm, $b = 460$\,mm, $d/b = 0.2217$
+\quad\textbar\quad ethanol manometer $\rho = 789$\,kg\,m$^{-3}$}\\[2pt]
+{\small 28 surface tappings \quad\textbar\quad Pitot-static on tubes 35/36 \quad\textbar\quad
+data reduction by \texttt{cylinder\_lab.m}}
+\end{center}
+
+\vspace{2pt}
+
+%=====================================================================
+\section{Purpose of this document}
+
+The handout asks for three things before the session: know the theory, have the reduction code
+ready, and be able to answer questions at the bench. This document is the written half of that
+preparation. It fixes the definitions and the order of operations now, so that during the lab
+nothing has to be derived under time pressure, and it collects the eleven oral-assessment
+questions with answers in Section~\ref{sec:oral}.
+
+Everything numerical quoted here (velocities, \Cp{} minima, \CD{} values) is what the code
+predicts for this apparatus; the real numbers will be whatever the manometer says.
+
+%=====================================================================
+\section{Theory}
+
+\subsection{Pressure coefficient, and how the manometer measures it}
+
+The conventional definition, with $p_\infty$ and $U_\infty$ taken upstream and outside the
+blockage-affected region, is
+\begin{equation}
+\Cp = \frac{p - p_\infty}{\tfrac12 \rho U_\infty^2}.
+\end{equation}
+Each tapping is connected to one tube of an ethanol manometer, so the pressure at tapping $i$
+is $p_i = p_{\text{atm}} + \rho_e g h_i$ with $h_i$ the column height read against the
+manifold datum. Taking the static Pitot tube (height $h_s$) as the free-stream reference,
+\begin{equation}
+p_i - p_\infty = \rho_e g\,(h_i - h_s), \qquad
+\tfrac12 \rho U_\infty^2 = q = \rho_e g\,(h_t - h_s),
+\end{equation}
+and therefore
+\begin{equation}\label{eq:cp}
+\boxed{\;\ensuremath{C_{p,i}} = \frac{h_i - h_s}{h_t - h_s} = \frac{h_i - h_s}{B}\;}
+\end{equation}
+The ethanol density, gravity and air density all cancel: \Cp{} is a pure ratio of column heights.
+That is worth remembering, because it is the reason a 0.5\,mm reading error is the dominant
+uncertainty in the whole experiment, and the reason a low tunnel speed (small $B$) is much
+noisier than a high one.
+
+\subsection{The potential-flow answer, and D'Alembert's paradox}
+
+For inviscid, irrotational flow past a cylinder the surface speed is $V_\theta = -2U\sin\theta$,
+so Bernoulli gives
+\begin{equation}
+\Cp(\theta) = 1 - \left(\frac{V_\theta}{U}\right)^2 = 1 - 4\sin^2\theta .
+\end{equation}
+It follows that $\Cp(0) = +1$ (stagnation), $\Cp(90^\circ) = -3$ (suction peak), and
+\begin{equation}
+\CD = \int_0^{\pi} \Cp\cos\theta\,\mathrm{d}\theta = 0 ,
+\end{equation}
+because $\Cp$ is symmetric about $\theta = 90^\circ$ while $\cos\theta$ is antisymmetric. Zero
+drag on a body in steady motion is D'Alembert's paradox: the theory has no mechanism to
+produce a wake, so the pressure on the front and the back of the cylinder cancel exactly.
+
+\subsection{What viscosity changes: separation and the base-pressure plateau}
+
+With viscosity the no-slip condition creates a boundary layer. From the suction peak
+($\theta \approx 90^\circ$ for the ideal case) onwards the surface pressure \emph{rises}
+downstream, i.e.\ the boundary layer faces an adverse pressure gradient and loses momentum.
+At the point where the wall shear stress vanishes, $\tau_w = 0$, the flow detaches:
+\begin{itemize}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item downstream of separation the surface pressure no longer responds to the outer flow ---
+it settles onto a nearly constant \emph{base pressure}, giving the flat plateau seen in
+$\Cp(\theta)$ after the knee;
+\item the wake is wide and low-pressure, so the rear of the cylinder no longer balances the
+front: form drag appears, $\CD \approx 1.2$ for a laminar boundary layer.
+\end{itemize}
+Operationally, the separation angle is therefore read as \emph{the angle where the pressure
+recovery ends and the plateau begins}, not as the point where $\Cp$ is lowest. In this
+experiment the laminar separation point sits at roughly $\thsep = 80^\circ$--$90^\circ$ and
+$\Cp^{\min} \approx -2.2$ rather than $-3$, because the boundary layer thickens and
+displaces the effective body before it detaches.
+
+\subsection{The trip wire, and why it is worth two extra runs}
+
+A wire placed on the surface \emph{upstream of} the natural separation point forces the
+boundary layer to transition to turbulence before it separates. A turbulent profile is fuller
+(more momentum close to the wall), so it survives a much stronger adverse gradient: separation
+moves aft to roughly $120^\circ$--$130^\circ$, the wake narrows, base pressure rises and
+$\CD$ collapses from $\approx 1.2$ to $\approx 0.5$.
+
+This is the same phenomenon as the drag crisis, reached at a far lower Reynolds number. The
+whole point of running the same two speeds with and without the wire is that \CD{} is not a
+function of $\ReD$ alone: at fixed $\ReD$ the boundary-layer \emph{state} changes \CD{} by
+more than a factor of two. That contrast is the core result of the lab, and it is why the
+second and third oral questions exist.
+
+%=====================================================================
+\section{The apparatus, and what each reading means}
+
+\subsection{Tappings, tubes and reference heights}
+
+Twenty-eight tappings at the angles tabulated in the handout (holes 1 and 7 at $\pm30^\circ$
+mirrored about hole 2 at $0^\circ$) feed tubes 1--28. The Pitot-static tube is on tubes 35 and
+36. Two consequences matter for the reduction:
+\begin{itemize}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item hole 2 sits at the front stagnation point, so $\Cp(0^\circ)$ should come out at $+1$,
+and its column height should equal the \emph{total} Pitot column;
+\item holes 1 and 7 are mirror images, so an aligned cylinder must give
+$\Cp(-30^\circ) = \Cp(+30^\circ)$. A mismatch is a rigid-body rotation of the whole ring and
+is used to correct the datum (see Section~\ref{sec:align}).
+\end{itemize}
+
+\subsection{Which Pitot tube is static and which is total}
+
+The static tube reads the smaller column (static pressure only); the total tube reads the
+larger by exactly the dynamic head. Two independent checks identify them within the first
+minute of the session:
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+\item the tube whose column equals the hole-2 column is the \emph{total} tube;
+\item $B = h_t - h_s > 0$ must hold, and $q = \rho_e g B$ must agree with
+$\tfrac12 \rho U^2$ for the nominal tunnel speed ($\approx 146$\,Pa at $700$\,rpm,
+$\approx 559$\,Pa at $1350$\,rpm).
+\end{enumerate}
+The code detects the assignment automatically and prints it; if it disagrees with what you
+observe, set \texttt{cfg.pitotOrder} explicitly rather than silently accepting it.
+
+\subsection{Alignment check}\label{sec:align}
+
+With $g = \mathrm{d}\Cp/\mathrm{d}\theta$ evaluated at $+30^\circ$, a magnitude mismatch
+$\Delta \Cp{}_{30} = \Cp(+30^\circ) - \Cp(-30^\circ)$ corresponds to a ring rotation
+\begin{equation}
+\Delta\theta_{\text{ring}} = -\frac{\Delta\Cp{}_{30}}{2g}.
+\end{equation}
+The factor 2 appears because both taps move in the same direction. Measured values of
+$0.05^\circ$--$0.14^\circ$ are normal; a value above $1^\circ$ means the cylinder should be
+rotated and the run repeated.
+
+%=====================================================================
+\section{Run plan}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}llllX@{}}
+\toprule
+Run & Trip wire & Engine & Expected $U'$ & What it is for \\
+\midrule
+1 & none & 700 rpm & $\approx 15.5$\,m/s, $\ReD \approx 1.0\times10^{5}$ &
+laminar separation, $\CD \approx 1.2$: the baseline \\
+2 & none & 1350 rpm & $\approx 30.5$\,m/s, $\ReD \approx 2.1\times10^{5}$ &
+same boundary-layer state, four times the dynamic head: cleaner data \\
+3 & fitted & 700 rpm & $\approx 15.5$\,m/s &
+tripped at the lower speed: separation far aft, low $\CD$ \\
+4 & fitted & 1350 rpm & $\approx 30.5$\,m/s &
+tripped at the higher speed: the pair used for the equivalent Reynolds number \\
+5 & fitted & optional & --- &
+only if the demonstrator offers a third speed; strengthens the $\CD$--$\ReD$ trend \\
+\bottomrule
+\end{tabularx}
+\caption{Run plan. The two untripped runs and the two tripped runs form a
+$2\times2$ design: two Reynolds numbers, two boundary-layer states.}
+\end{table}
+
+Between runs the tunnel is brought to the new speed and left to settle before any column is
+read; the manometer needs tens of seconds and the ethanol menisci are slow. Read all 30
+columns at one sitting per run, in one pass, so that a slow drift cannot masquerade as a
+pressure distribution.
+
+%=====================================================================
+\section{Data reduction, in the order it has to be done}
+
+\subsection{Step 1 --- \Cp{} for every tapping}
+
+Equation~\eqref{eq:cp}. Nothing else can be computed before this, and the whole chain inherits
+the reading error at this point.
+
+\subsection{Step 2 --- uncorrected coefficients}
+
+With the 27 angles from $0^\circ$ to $180^\circ$ (hole 1 at $-30^\circ$ is used only for the
+symmetry check, not for the integral), the trapezoidal sums are
+\begin{equation}
+\CD' = \int_0^{\pi}\Cp\cos\theta\,\mathrm{d}\theta,\qquad
+\CL' = \frac12\int_0^{2\pi}\Cp\sin\theta\,\mathrm{d}\theta .
+\end{equation}
+Only half the circumference is instrumented, so the missing half is supplied by symmetry
+$\Cp(360^\circ-\theta) = \Cp(\theta)$; the antisymmetric part of the measured data is reported
+separately as an asymmetry term ($\CL$ from the measured $-30^\circ$ point, essentially
+$\Delta\Cp{}_{30}/2$). On a non-uniform grid the trapezoidal weights are not equal --- the
+weights follow the actual angular spacing of each pair of taps.
+
+\subsection{Step 3 --- blockage correction (Roshko, eqs 1--3)}
+
+The cylinder blocks 22\,\% of the test-section breadth, so the flow around it is accelerated
+relative to the nominal tunnel speed. With $r = d/b = 0.2217$ and $\CD'$ from step 2,
+\begin{align}
+\frac{V}{V'} &= 1 + \tfrac14 \CD'\,r + 0.82\,r^2, \label{eq:vv}\\
+\CD{}_{\text{eq2}} &= \left(1 - \tfrac12 \CD'\, r - 2.5\,r^2\right)\CD', \label{eq:cd2}\\
+\Cp &= 1 + \left(\frac{V'}{V}\right)^{2}\left(\Cp' - 1\right). \label{eq:cp3}
+\end{align}
+The order is forced: \eqref{eq:vv} needs $\CD'$, and \eqref{eq:cp3} needs $V/V'$. The corrected
+velocity is $V = V'\,(V/V')$, and the corrected Reynolds number follows from it.
+
+\subsection{Step 4 --- corrected drag, two ways}
+
+\begin{itemize}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item integrate the corrected distribution from \eqref{eq:cp3}: $\CD{}_{\text{int}}$;
+\item apply the direct correction \eqref{eq:cd2} to $\CD'$: $\CD{}_{\text{eq2}}$.
+\end{itemize}
+These are not the same number and should not be forced to agree: \eqref{eq:cd2} is an
+empirical fit to the whole flow, while $\CD{}_{\text{int}}$ only knows the 28 sampled pressures.
+The gap is typically 7--9\,\% and is itself a result worth commenting on.
+
+\subsection{Step 5 --- equivalent Reynolds number for the tripped runs}
+
+$\CD$ alone does not fix $\ReD$, because the $\CD(\ReD)$ curve is double-valued around the
+critical point. Map the tripped $\CD$ onto the \emph{rising} branch of the reference curve
+(Roshko Fig.~2 / Anderson Fig.~3.44) and read off $\ReD_{\text{eq}}$. Expect
+$\ReD_{\text{eq}} \sim 10^6$ from the tripped runs, one to two decades above the actual
+tunnel $\ReD$ --- which is exactly the point of tripping: it buys a high-\ReD{} boundary layer
+at low-\ReD{} cost.
+
+\subsection{Step 6 --- separation angle}
+
+From the \Cp{} distribution: locate the suction peak, then walk aft until the recovery slope
+$\mathrm{d}\Cp/\mathrm{d}\theta$ stays small over a 12$^\circ$ window. The criterion, the
+thresholds and their justification are in the companion document; the operational definition
+is ``the angle where the plateau begins'', and for a smeared knee the answer carries
+$\pm 20^\circ$ rather than $\pm 2.5^\circ$.
+
+%=====================================================================
+\section{Uncertainty plan}
+
+The full derivation is in the companion notes; what has to be decided \emph{before} the lab is
+which error dominates and therefore where to spend effort.
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Quantity & How it enters & Expected $1\sigma$ \\
+\midrule
+One column height $h_i$ & type A from 3 repeats $+\ \pm0.5$\,mm scale term; $\Cp$ error $=u(h)/B$ &
+0.027 (low speed), 0.007 (high) \\
+Tap angle $\theta_i$ & machining tolerance $0.5^\circ/\sqrt3$, per tap & $0.29^\circ$ \\
+Ring rotation & from the $\pm30^\circ$ pair, coherent over all taps & $0.05$--$0.14^\circ$ \\
+Air temperature & type B only ($0.5$\,K half-width), enters $\rho$ and $\mu$ & $0.3$\,K \\
+Barometric pressure & type B only, enters $\rho$ & 50\,Pa \\
+Separation angle & slope noise divided by knee curvature, floored at half the tap spacing & $2.5^\circ$ or $\gg$ \\
+\bottomrule
+\end{tabularx}
+\caption{Where the uncertainty comes from. The low-speed runs are four times noisier in \Cp{}
+than the high-speed ones, purely because $B$ is four times smaller.}
+\end{table}
+
+Two practical consequences to act on at the bench:
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+\item \textbf{read each tapping at least three times}; with one reading the type-A term
+disappears and $u(\CD')$ roughly triples;
+\item \textbf{prefer the high-speed runs} when a single number has to be quoted, and say
+so explicitly --- $u(\CD')$ is 1.0\,\% against 4.0\,\% at the low speed.
+\end{enumerate}
+
+Report every $u$ as $1\sigma$, and state $k=2$ where a 95\,\% figure is quoted. Do not mix the
+two conventions on the same graph.
+
+%=====================================================================
+\section{Checks to run at the bench}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Check & Expected \\
+\midrule
+$\Cp(0^\circ)$ from hole 2 & $+1.00 \pm 0.05$, and equal to the total Pitot column \\
+$\Cp(90^\circ)$ untripped & $-2.0$ to $-2.3$ (ideal $-3$) \\
+$\Cp(90^\circ)$ tripped & $-1.4$ to $-1.6$ \\
+$\Cp(\pm30^\circ)$ mismatch & below $0.01$ in $\Cp$, i.e.\ $\Delta\theta_{\text{ring}} < 0.2^\circ$ \\
+Base pressure $180^\circ$ & $\Cp \approx -0.3$ untripped, $\Cp \approx -0.1$ to $-0.2$ tripped \\
+$\CD'$ untripped / tripped & $\approx 1.1$ / $\approx 0.5$ \\
+Separation, untripped / tripped & $85^\circ$--$95^\circ$ / $120^\circ$--$135^\circ$ \\
+\bottomrule
+\end{tabularx}
+\caption{If any of these fails by more than the tolerance, suspect a tube leak, a bubble or a
+mistaken Pitot assignment before suspecting the theory.}
+\end{table}
+
+%=====================================================================
+\section{Oral assessment: the eleven questions, with answers}\label{sec:oral}
+
+The handout lists the questions below. They are reproduced with the answers I intend to give,
+so that the numbers and the phrasing are settled beforehand.
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=4pt,topsep=2pt]
+
+\item \textbf{How do we vary Reynolds number, and why this way? Which speed is more reliable?}\\
+$\ReD = \rho U d/\mu$ and $d$, $\rho$, $\mu$ are fixed by hardware and weather, so the only
+lever is $U$, i.e.\ engine rpm. The high speed is more reliable: $q \propto U^2$, so the
+Pitot column doubles while the reading error stays 0.5\,mm, and the relative \Cp{} error
+falls from 1.9\,\% to 0.5\,\%.
+
+\item \textbf{Where is the best place to put the wire?}\\
+On the surface, upstream of the natural separation point --- about $60^\circ$--$75^\circ$
+from the front stagnation point. Too far forward and transition happens too early, giving a
+over-thick turbulent layer and an unrepresentative \Cp{}; too far aft (past separation) and
+it does nothing, because the layer has already detached. Diameter of order 1\,mm, spanning
+the full width at mid-span.
+
+\item \textbf{Why does separation differ with and without the wire at the same \ReD?}\\
+Because separation is set by the boundary-layer \emph{state}, not by $\ReD$ alone. A laminar
+profile cannot sustain much adverse gradient and detaches near $85^\circ$; a turbulent profile
+carries more momentum near the wall and survives to $130^\circ$. Same $\ReD$, different
+flow: this is the clearest demonstration that $\CD$ is not a single-valued function of $\ReD$.
+
+\item \textbf{What effect does this have on drag?}\\
+Delaying separation raises the base pressure (the wake is narrower and less suctorial), so
+form drag collapses: $\CD$ from $\approx 1.2$ to $\approx 0.5$. Skin friction rises slightly
+with turbulence, but the form-drag drop dominates by an order of magnitude.
+
+\item \textbf{What is the effective Reynolds number for the tripped case?}\\
+Take the measured tripped $\CD$ (about 0.48--0.50) and follow the rising branch of the
+$\CD(\ReD)$ curve until it reaches that value: $\ReD_{\text{eq}} \approx 1$--$2\times10^{6}$,
+one to two decades above the tunnel $\ReD \approx 2\times10^{5}$.
+
+\item \textbf{Two examples where tripping a boundary layer is advantageous.}\\
+A golf ball: dimples force early transition, delay separation and roughly double the carry.
+A turbine or compressor blade at low Reynolds number: a trip strip on the suction side
+prevents laminar separation, which would otherwise stall the blade --- the same mechanism
+used on low-\ReD{} wind-tunnel models so that they reproduce full-scale behaviour.
+
+\item \textbf{What does blockage do to the pressure measurements and to drag?}\\
+It accelerates the flow around the model relative to the nominal tunnel speed and constrains
+the wake. Measured suction is too strong and measured $\CD$ too high: the sampled
+$\Cp^{\min} \approx -2.27$ is corrected to $\approx -1.70$, and the direct correction reduces
+$\CD'$ by 5--10\,\%. The correction factor here is $V/V' = 1.102$ at the low speed.
+
+\item \textbf{Other sources of error besides blockage?}\\
+Column reading (parallax, meniscus) and scale resolution; tube leaks, trapped bubbles, clogged
+taps; thermal drift over the session; unsteady vortex shedding, which makes a single reading
+a sample of a fluctuating field rather than a mean; three-dimensional end effects and wall
+boundary layers; ring misalignment; surface roughness and any wire actually changing the
+geometry; and the finite number of taps, which under-resolves the suction peak.
+
+\item \textbf{Which of the two Pitot readings is static and which is total?}\\
+The smaller column is static; the larger is total. Confirmed at the bench by matching the
+total tube to hole 2 (stagnation), and by checking $q = \rho_e g B$ against
+$\tfrac12\rho U^2$ for the nominal rpm.
+
+\item \textbf{What speed would give a turbulent boundary layer without a trip wire?}\\
+Natural transition on a smooth cylinder begins around $\ReD \approx 2\times10^{5}$ and is
+complete by $\approx 3.5\times10^{5}$, i.e.\ $U = \ReD\mu/(\rho d) \approx 30$--$50$\,m/s.
+The upper end is beyond this tunnel's practical range (and the model would vibrate), which
+is precisely why the wire is needed.
+
+\item \textbf{What other surface features could force transition?}\\
+Distributed roughness (grit or sandpaper); dimples; spanwise trip dots or a strip of
+tape/thickness change; a seam or step; or a small spanwise protrusion. All work by
+introducing a local disturbance whose length scale is comparable to the boundary-layer
+thickness.
+
+\end{enumerate}
+
+%=====================================================================
+\section{Logistics and what to write in the logbook}
+
+\begin{itemize}[leftmargin=1.2em,itemsep=2pt,topsep=2pt]
+\item Arrive before the stated start; late entry is refused after two minutes.
+\item Note the tunnel air temperature (three readings) and barometric pressure (three readings)
+\emph{before} the first run, and the manometer scale increment (mm per division).
+\item Fill one row per tapping per run in \texttt{readings.csv} (wide layout: three repeat
+columns), and record which Pitot tube was static.
+\item After each run, note the engine rpm, whether the wire was fitted and where, and any
+anomaly (bubble, leaking tube, drifting zero).
+\item In the logbook, record the seven numbers per run that matter: $\CD'$,
+$\CD{}_{\text{eq2}}$, $\CD{}_{\text{int}}$, $V/V'$, $\thsep$, $\ReD'$, plus
+$u(\CD')$, $u(\thsep)$ and $\Delta\theta_{\text{ring}}$.
+\item Keep the raw column heights. Everything else can be recomputed from them; they cannot.
+\end{itemize}
+
+\end{document}
